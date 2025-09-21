@@ -49,6 +49,12 @@ h1 {
   color: #1d4ed8;
 }
 
+.brand-logo {
+  width: min(60vw, 340px);
+  height: auto;
+  display: block;
+}
+
 .toggle-buttons {
   display: flex;
   gap: 12px;
