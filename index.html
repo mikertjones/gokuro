@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Word Puzzle Grid Mockup</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Word Puzzle Grid Mockup</h1>
+  <div class="toggle-buttons" role="group" aria-label="Grid size selection">
+    <button type="button" class="grid-toggle active" data-puzzle="5x5">5x5 Grid</button>
+    <button type="button" class="grid-toggle" data-puzzle="6x6">6x6 Grid</button>
+    <button type="button" class="grid-toggle" data-puzzle="7x7">7x7 DIAMOND</button>
+  </div>
+  <div class="board-area">
+    <div class="grid-wrapper" aria-label="Word puzzle grid">
+      <div id="puzzle-grid" class="grid" role="grid"></div>
+    </div>
+    <div class="letter-panel" aria-label="Letter tracker">
+      <table class="letter-table">
+        <thead>
+          <tr>
+            <th colspan="2" scope="colgroup">Vowels</th>
+            <th colspan="2" scope="colgroup">Consonants</th>
+          </tr>
+          <tr>
+            <th scope="col">Letter</th>
+            <th scope="col">Value</th>
+            <th scope="col">Letter</th>
+            <th scope="col">Value</th>
+          </tr>
+        </thead>
+        <tbody id="letter-tally"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="reset-wrapper">
+    <button type="button" id="reset-btn" class="reset-button">Reset Puzzle</button>
+  </div>
+  <p class="legend">
+    Black squares reflect the full-stop placeholders from the source matrix. Vowels render as <strong>*</strong> until a letter is entered, while consonant cells stay blank. Totals along the right and bottom edges start at the full letter sum (A=1 to Z=26) and automatically decrease as you type guesses into the grid.
+  </p>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
+
