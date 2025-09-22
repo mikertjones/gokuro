@@ -14,7 +14,10 @@
   </div>
   <div class="board-area">
     <div class="grid-wrapper" aria-label="Word puzzle grid">
-      <div id="puzzle-grid" class="grid" role="grid"></div>
+      <div class="grid-stack">
+        <div id="puzzle-grid" class="grid" role="grid"></div>
+        <div id="letter-array" class="letter-array" aria-label="Letter distribution"></div>
+      </div>
     </div>
     <div class="letter-panel" aria-label="Letter tracker">
       <table class="letter-table">

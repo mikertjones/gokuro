@@ -67,6 +67,7 @@ const puzzles = {
 
 const gridEl = document.getElementById('puzzle-grid');
 const letterTableBody = document.getElementById('letter-tally');
+const letterArrayEl = document.getElementById('letter-array');
 const toggleButtons = Array.from(document.querySelectorAll('.grid-toggle'));
 const resetButton = document.getElementById('reset-btn');
 
@@ -89,6 +90,7 @@ function init() {
     });
   }
 
+  window.addEventListener('resize', syncLetterArrayWidth);
   setActivePuzzle('5x5', { force: true });
 }
 
@@ -108,6 +110,7 @@ function setActivePuzzle(key, { force = false } = {}) {
   renderButtons();
   renderGrid(activeState);
   renderLetterTable(activeState);
+  renderLetterArray(activeState);
   attachInputHandlers(activeState);
   updateTotals(activeState);
 }
@@ -173,6 +176,7 @@ function prepareState(raw) {
     vowelEntries: Array.from(vowelCounts.entries()).sort((a, b) => a[0].localeCompare(b[0])),
     consonantEntries: Array.from(consonantCounts.entries()).sort((a, b) => a[0].localeCompare(b[0])),
     letterTokens: new Map(),
+    letterCards: new Map(),
     inputs: [],
     rowDisplays: [],
     colDisplays: [],
@@ -260,6 +264,135 @@ function renderLetterTable(state) {
     row.appendChild(createValueCell(consonantEntry));
 
     letterTableBody.appendChild(row);
+  }
+}
+
+function renderLetterArray(state) {
+  if (!letterArrayEl) {
+    return;
+  }
+  letterArrayEl.innerHTML = '';
+  state.letterCards = new Map();
+
+  const vowelMap = new Map(state.vowelEntries);
+  const vowelRow = Array.from(vowelSet).map((letter) => ({
+    letter,
+    count: vowelMap.get(letter) || 0,
+    present: vowelMap.has(letter),
+  }));
+
+  const consonantObjects = state.consonantEntries.map(([letter, count]) => ({ letter, count, present: true }));
+
+  const rows = [
+    { entries: vowelRow, type: 'vowel' },
+    { entries: consonantObjects.slice(0, 5), type: 'consonant' },
+    { entries: consonantObjects.slice(5, 10), type: 'consonant' },
+  ];
+
+  rows.forEach((rowDef) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'letter-array-row';
+    rowEl.dataset.rowType = rowDef.type;
+    letterArrayEl.appendChild(rowEl);
+
+    for (let i = 0; i < 5; i += 1) {
+      const entry = rowDef.entries[i] || null;
+      const card = createLetterCard(entry, state, rowDef.type);
+      rowEl.appendChild(card);
+    }
+  });
+
+  updateLetterArrayUsage(state);
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(syncLetterArrayWidth);
+  } else {
+    syncLetterArrayWidth();
+  }
+}
+
+function createLetterCard(entry, state, type) {
+  const card = document.createElement('div');
+  card.classList.add('letter-card');
+  card.classList.add(type === 'vowel' ? 'letter-card-vowel' : 'letter-card-consonant');
+
+  if (!entry) {
+    card.classList.add('letter-card-empty');
+    card.setAttribute('aria-hidden', 'true');
+    return card;
+  }
+
+  const { letter, count, present = true } = entry;
+  card.dataset.letter = letter;
+  card.setAttribute('role', 'group');
+
+  const letterEl = document.createElement('span');
+  letterEl.className = 'letter-card-letter';
+  letterEl.textContent = letter;
+  card.appendChild(letterEl);
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'letter-card-value';
+  valueEl.textContent = letterValues[letter];
+  card.appendChild(valueEl);
+
+  const tokenStrip = document.createElement('div');
+  tokenStrip.className = 'letter-card-token-strip';
+  card.appendChild(tokenStrip);
+
+  if (present && count > 0) {
+    const tokens = [];
+    for (let i = 0; i < count; i += 1) {
+      const pip = document.createElement('span');
+      pip.className = 'letter-card-token';
+      tokenStrip.appendChild(pip);
+      tokens.push(pip);
+    }
+    state.letterCards.set(letter, { card, tokens, total: count });
+    card.setAttribute('aria-label', `${letter} letters available ${count}`);
+  } else {
+    card.classList.add('letter-card-absent');
+    card.setAttribute('aria-label', `${letter} not present in puzzle`);
+  }
+
+  return card;
+}
+
+function updateLetterArrayUsage(state) {
+  if (!state.letterCards || state.letterCards.size === 0) {
+    return;
+  }
+
+  state.letterCards.forEach((info, letter) => {
+    const bucket = state.letterTokens.get(letter) || [];
+    const total = bucket.length || info.total || 0;
+    const used = bucket.reduce(
+      (acc, token) => acc + (token.classList.contains('used') ? 1 : 0),
+      0
+    );
+    const remaining = Math.max(total - used, 0);
+
+    info.tokens.forEach((pip, idx) => {
+      pip.classList.toggle('used', idx < used);
+    });
+
+    info.card.classList.toggle('depleted', remaining === 0);
+    info.card.classList.toggle('partial', remaining > 0 && remaining < total);
+    info.card.setAttribute(
+      'aria-label',
+      `${letter} letters remaining ${remaining} of ${total}`
+    );
+  });
+}
+
+function syncLetterArrayWidth() {
+  if (!letterArrayEl) {
+    return;
+  }
+  const gridRect = gridEl.getBoundingClientRect();
+  if (gridRect.width > 0) {
+    letterArrayEl.style.width = `${Math.round(gridRect.width)}px`;
+  } else {
+    letterArrayEl.style.removeProperty('width');
   }
 }
 
@@ -357,6 +490,7 @@ function handleInput(event, state) {
   }
 
   cell.dataset.prevChar = cleaned;
+  updateLetterArrayUsage(state);
 }
 
 function consumeToken(state, letter) {
