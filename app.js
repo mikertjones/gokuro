@@ -65,6 +65,12 @@ const puzzles = {
   },
 };
 
+const maxTotalCols = Object.values(puzzles).reduce((max, puzzle) => {
+  const matrix = puzzle.data.matrix || [];
+  const cols = matrix[0] ? matrix[0].length : 0;
+  return Math.max(max, cols + 1);
+}, 0);
+
 const gridEl = document.getElementById('puzzle-grid');
 const letterTableBody = document.getElementById('letter-tally');
 const letterArrayEl = document.getElementById('letter-array');
@@ -90,7 +96,7 @@ function init() {
     });
   }
 
-  window.addEventListener('resize', syncLetterArrayWidth);
+  window.addEventListener('resize', handleResize);
   setActivePuzzle('5x5', { force: true });
 }
 
@@ -109,10 +115,12 @@ function setActivePuzzle(key, { force = false } = {}) {
 
   renderButtons();
   renderGrid(activeState);
+  updateGridScaling(activeState);
   renderLetterTable(activeState);
   renderLetterArray(activeState);
   attachInputHandlers(activeState);
   updateTotals(activeState);
+  handleResize();
 }
 
 function renderButtons() {
@@ -264,6 +272,43 @@ function renderLetterTable(state) {
     row.appendChild(createValueCell(consonantEntry));
 
     letterTableBody.appendChild(row);
+  }
+}
+
+function getBaseCellSize() {
+  const rootStyles = getComputedStyle(document.documentElement);
+  const raw = rootStyles.getPropertyValue('--cell-size').trim();
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 56;
+}
+
+function updateGridScaling(state) {
+  if (!gridEl || !state) {
+    return;
+  }
+  const totalCols = state.colCount + 1;
+  if (totalCols <= 0 || maxTotalCols === 0) {
+    return;
+  }
+  const baseSize = getBaseCellSize();
+  const adjustedCellSize = (baseSize * maxTotalCols) / totalCols;
+  const targetWidth = baseSize * maxTotalCols;
+  const cellSizePx = `${Math.max(adjustedCellSize, 0).toFixed(3)}px`;
+  const widthPx = `${targetWidth.toFixed(3)}px`;
+  gridEl.style.setProperty('--cell-size', cellSizePx);
+  gridEl.style.width = widthPx;
+  gridEl.style.maxWidth = widthPx;
+  gridEl.style.minWidth = widthPx;
+}
+
+function handleResize() {
+  if (activeState) {
+    updateGridScaling(activeState);
+  }
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(syncLetterArrayWidth);
+  } else {
+    syncLetterArrayWidth();
   }
 }
 
