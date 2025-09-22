@@ -467,7 +467,7 @@ h1 {
   .grid-wrapper,
   .letter-panel {
     width: 100%;
-    max-width: 420px;
+    max-width: none;
   }
   .grid-wrapper {
     order: 0;
@@ -482,7 +482,7 @@ h1 {
     --cell-size: 42px;
   }
   body {
-    padding: 24px 16px 32px;
+    padding: 20px 12px 28px;
     gap: 24px;
   }
   .toggle-buttons {
@@ -490,8 +490,9 @@ h1 {
     gap: 10px;
   }
   .grid-toggle {
-    flex: 1 1 calc(50% - 10px);
-    min-width: 140px;
+    flex: 0 1 auto;
+    min-width: 120px;
+    padding: 8px 16px;
   }
   .board-area {
     flex-direction: column;
@@ -501,7 +502,7 @@ h1 {
   .grid-wrapper,
   .letter-panel {
     width: 100%;
-    max-width: 360px;
+    max-width: none;
   }
   .letter-panel {
     min-width: 0;
@@ -550,6 +551,9 @@ h1 {
   :root {
     --cell-size: 36px;
   }
+  body {
+    padding: 18px 10px 24px;
+  }
   h1 {
     font-size: 24px;
   }
@@ -557,7 +561,10 @@ h1 {
     font-size: 1.2rem;
   }
   .grid-toggle {
-    flex: 1 1 100%;
+    flex: 0 1 auto;
+    min-width: 110px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
   }
   .letter-array {
     gap: 8px;

@@ -4,6 +4,8 @@ const letterValues = Object.fromEntries(
 
 const vowelSet = new Set(['A', 'E', 'I', 'O', 'U']);
 
+const BASE_CELL_SIZE = 56;
+
 const puzzles = {
   '5x5': {
     label: '5x5 Grid',
@@ -276,10 +278,7 @@ function renderLetterTable(state) {
 }
 
 function getBaseCellSize() {
-  const rootStyles = getComputedStyle(document.documentElement);
-  const raw = rootStyles.getPropertyValue('--cell-size').trim();
-  const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 56;
+  return BASE_CELL_SIZE;
 }
 
 function updateGridScaling(state) {
@@ -290,11 +289,30 @@ function updateGridScaling(state) {
   if (totalCols <= 0 || maxTotalCols === 0) {
     return;
   }
-  const baseSize = getBaseCellSize();
-  const adjustedCellSize = (baseSize * maxTotalCols) / totalCols;
-  const targetWidth = baseSize * maxTotalCols;
+
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  const bodyStyles = getComputedStyle(document.body);
+  const paddingLeft = parseFloat(bodyStyles.paddingLeft) || 0;
+  const paddingRight = parseFloat(bodyStyles.paddingRight) || 0;
+  const availableWidth = Math.max(viewportWidth - paddingLeft - paddingRight, 240);
+  
+  // Use full available width on mobile, maintain max width constraint on desktop
+  const isMobile = viewportWidth <= 640;
+  let targetWidth;
+  
+  if (isMobile) {
+    // On mobile, use 95% of available width to ensure it fits with some margin
+    targetWidth = availableWidth * 0.95;
+  } else {
+    // On desktop, use original logic
+    const maxBoardWidth = BASE_CELL_SIZE * maxTotalCols;
+    targetWidth = Math.min(maxBoardWidth, availableWidth);
+  }
+  
+  const adjustedCellSize = targetWidth / totalCols;
   const cellSizePx = `${Math.max(adjustedCellSize, 0).toFixed(3)}px`;
   const widthPx = `${targetWidth.toFixed(3)}px`;
+
   gridEl.style.setProperty('--cell-size', cellSizePx);
   gridEl.style.width = widthPx;
   gridEl.style.maxWidth = widthPx;
