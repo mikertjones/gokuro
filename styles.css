@@ -207,15 +207,11 @@ h1 {
 
 .letter-card-token-strip {
   position: absolute;
-  bottom: 12px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  justify-content: center;
-  align-items: center;
-  row-gap: 6px;
-  column-gap: 8px;
+  display: flex;
+  gap: 6px;
 }
 
 .letter-card-token {
@@ -225,12 +221,11 @@ h1 {
   background: var(--token-bg);
   opacity: 0.65;
   transition: opacity 0.2s ease, background 0.2s ease;
-  justify-self: center;
 }
 
 .letter-card-token.used {
   background: var(--token-bg-used);
-  opacity: 0.8;
+  opacity: 0.65;
 }
 
 .cell {
@@ -527,8 +522,7 @@ h1 {
   }
   .letter-card-token-strip {
     bottom: 8px;
-    row-gap: 4px;
-    column-gap: 6px;
+    gap: 4px;
   }
   .letter-card-token {
     width: 10px;
@@ -581,8 +575,7 @@ h1 {
   }
   .letter-card-token-strip {
     bottom: 6px;
-    row-gap: 3px;
-    column-gap: 5px;
+    gap: 3px;
   }
   .letter-card-token {
     width: 9px;

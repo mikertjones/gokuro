@@ -26,8 +26,8 @@ const puzzles = {
       fingerprint: '7fe891344d9734b5caeac06d871f60eb',
     },
   },
-  '6x6': {
-    label: '6x6 Grid',
+  '5x6': {
+    label: '5x6 Grid',
     data: {
       rows: {
         R3C1_ACROSS: 'ABACUS',
