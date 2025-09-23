@@ -65,6 +65,23 @@ const puzzles = {
       fingerprint: 'abstain_35ff1327',
     },
   },
+  '7x7-offset': {
+    label: '7x7 OFFSET',
+    data: {
+      matrix: [
+        '.ELM...',
+        '.PAIN..',
+        '.ONSET.',
+        'ACCLAIM',
+        '.HEART.',
+        '..TILL.',
+        '...DYE.',
+      ],
+      row_words: ['ELM', 'PAIN', 'ONSET', 'ACCLAIM', 'HEART', 'TILL', 'DYE'],
+      col_words: ['EPOCH', 'LANCET', 'MISLAID', 'NEARLY', 'TITLE'],
+      fingerprint: 'acclaim_9903ef96',
+    },
+  },
 };
 
 const maxTotalCols = Object.values(puzzles).reduce((max, puzzle) => {
@@ -344,13 +361,23 @@ function renderLetterArray(state) {
     present: vowelMap.has(letter),
   }));
 
-  const consonantObjects = state.consonantEntries.map(([letter, count]) => ({ letter, count, present: true }));
+  const consonantObjects = state.consonantEntries.map(([letter, count]) => ({
+    letter,
+    count,
+    present: true,
+  }));
 
-  const rows = [
-    { entries: vowelRow, type: 'vowel' },
-    { entries: consonantObjects.slice(0, 5), type: 'consonant' },
-    { entries: consonantObjects.slice(5, 10), type: 'consonant' },
-  ];
+  const cardsPerRow = 5;
+  const rows = [{ entries: vowelRow, type: 'vowel' }];
+
+  if (consonantObjects.length === 0) {
+    rows.push({ entries: [], type: 'consonant' });
+  } else {
+    for (let idx = 0; idx < consonantObjects.length; idx += cardsPerRow) {
+      rows.push({ entries: consonantObjects.slice(idx, idx + cardsPerRow), type: 'consonant' });
+    }
+  }
+
 
   rows.forEach((rowDef) => {
     const rowEl = document.createElement('div');
@@ -358,7 +385,7 @@ function renderLetterArray(state) {
     rowEl.dataset.rowType = rowDef.type;
     letterArrayEl.appendChild(rowEl);
 
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < cardsPerRow; i += 1) {
       const entry = rowDef.entries[i] || null;
       const card = createLetterCard(entry, state, rowDef.type);
       rowEl.appendChild(card);
