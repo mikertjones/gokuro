@@ -14,6 +14,9 @@
     <button type="button" class="grid-toggle" data-puzzle="7x7">7x7 DIAMOND</button>
     <button type="button" class="grid-toggle" data-puzzle="7x7-offset">7x7 OFFSET</button>
   </div>
+  <div class="info-button-row">
+    <button type="button" id="how-to-play-btn" class="how-to-button">How to play Gokuro</button>
+  </div>
   <div class="board-area">
     <div class="grid-wrapper" aria-label="Word puzzle grid">
       <div class="grid-stack">
@@ -45,9 +48,30 @@
   <p class="legend">
     Black squares reflect the full-stop placeholders from the source matrix. Vowels render as <strong>*</strong> until a letter is entered, while consonant cells stay blank. Totals along the right and bottom edges start at the full letter sum (A=1 to Z=26) and automatically decrease as you type guesses into the grid.
   </p>
+  <div id="how-to-play-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="how-to-play-heading">
+      <button type="button" class="modal-close" aria-label="Close dialog" data-close-modal>&times;</button>
+      <h2 id="how-to-play-heading">Gokuro</h2>
+      <p class="modal-subheading">How to play</p>
+      <ul class="modal-list">
+        <li>Gokuro puzzle is a word grid</li>
+        <li>There are no repeated words</li>
+        <li>The sum of letter values in each word is shown to the right and below</li>
+        <li>A '*' in a square indicates a vowel</li>
+        <li>A '!' after a word total indicates that at least one letter is used more than once in the word - not neccessarily as a double</li>
+        <li>The letter tray below the grid shows how many of each letter appears in the grid and their values</li>
+      </ul>
+      <h3 class="modal-tips-heading">Tips</h3>
+      <ul class="modal-list">
+        <li>start with the lowest word total</li>
+        <li>test with vowels to see what total remains to be found</li>
+      </ul>
+      <button type="button" class="modal-action" data-close-modal>Close</button>
+    </div>
+  </div>
 
   <script src="app.js" defer></script>
 </body>
 </html>
-
 

@@ -95,9 +95,12 @@ const letterTableBody = document.getElementById('letter-tally');
 const letterArrayEl = document.getElementById('letter-array');
 const toggleButtons = Array.from(document.querySelectorAll('.grid-toggle'));
 const resetButton = document.getElementById('reset-btn');
+const howToPlayButton = document.getElementById('how-to-play-btn');
+const howToPlayModal = document.getElementById('how-to-play-modal');
 
 let activeKey = null;
 let activeState = null;
+let lastFocusedElement = null;
 
 function init() {
   toggleButtons.forEach((button) => {
@@ -116,6 +119,7 @@ function init() {
   }
 
   window.addEventListener('resize', handleResize);
+  setupHowToPlayModal();
   setActivePuzzle('5x5', { force: true });
 }
 
@@ -664,6 +668,66 @@ function updateTotalStyles(state) {
     }
   });
 }
+
+
+function setupHowToPlayModal() {
+  if (!howToPlayButton || !howToPlayModal) {
+    return;
+  }
+
+  const closeTargets = Array.from(howToPlayModal.querySelectorAll('[data-close-modal]'));
+
+  howToPlayButton.addEventListener('click', openHowToPlayModal);
+  closeTargets.forEach((element) => {
+    element.addEventListener('click', closeHowToPlayModal);
+  });
+
+  document.addEventListener('keydown', handleModalKeydown);
+}
+
+function openHowToPlayModal() {
+  if (!howToPlayModal || isModalOpen()) {
+    return;
+  }
+
+  lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  howToPlayModal.classList.add('is-open');
+  howToPlayModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+
+  const defaultFocus =
+    howToPlayModal.querySelector('.modal-close') || howToPlayModal.querySelector('.modal-action');
+  if (defaultFocus && typeof defaultFocus.focus === 'function') {
+    defaultFocus.focus();
+  }
+}
+
+function closeHowToPlayModal() {
+  if (!howToPlayModal || !isModalOpen()) {
+    return;
+  }
+
+  howToPlayModal.classList.remove('is-open');
+  howToPlayModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+
+  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+    lastFocusedElement.focus();
+  }
+  lastFocusedElement = null;
+}
+
+function isModalOpen() {
+  return Boolean(howToPlayModal && howToPlayModal.classList.contains('is-open'));
+}
+
+function handleModalKeydown(event) {
+  if (event.key === 'Escape' && isModalOpen()) {
+    event.preventDefault();
+    closeHowToPlayModal();
+  }
+}
+
 
 function incrementMap(map, key) {
   map.set(key, (map.get(key) || 0) + 1);
