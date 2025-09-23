@@ -625,7 +625,7 @@ h1 {
     gap: 10px;
   }
   .info-button-row {
-    margin-top: 12px;
+    margin-top: 0px;
   }
   .how-to-button,
   .modal-action {
