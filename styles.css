@@ -57,7 +57,7 @@ h1 {
 
 .toggle-buttons {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
   align-items: center;
 }
@@ -67,9 +67,9 @@ h1 {
   border: 2px solid #1d4ed8;
   background: transparent;
   color: #1d4ed8;
-  padding: 8px 20px;
+  padding: 8px 10px;
   border-radius: 999px;
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -563,8 +563,8 @@ h1 {
   .grid-toggle {
     flex: 0 1 auto;
     min-width: 110px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
+    padding: 8px 10px;
+    font-size: 0.7rem;
   }
   .letter-array {
     gap: 8px;
