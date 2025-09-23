@@ -3,20 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Word Puzzle Grid Mockup</title>
+  <title>Gokuro</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <img src="images/gokuro-logo.jpg" alt="Gokuro word puzzle logo" class="brand-logo" />
+
+  <div class="info-button-row">
+    <button type="button" id="how-to-play-btn" class="how-to-button">How to play Gokuro</button>
+  </div>
+
   <div class="toggle-buttons" role="group" aria-label="Grid size selection">
     <button type="button" class="grid-toggle active" data-puzzle="5x5">5x5 Grid</button>
     <button type="button" class="grid-toggle" data-puzzle="5x6">5x6 Grid</button>
     <button type="button" class="grid-toggle" data-puzzle="7x7">7x7 DIAMOND</button>
     <button type="button" class="grid-toggle" data-puzzle="7x7-offset">7x7 OFFSET</button>
   </div>
-  <div class="info-button-row">
-    <button type="button" id="how-to-play-btn" class="how-to-button">How to play Gokuro</button>
+
+  <!-- Timer Section - Centered -->
+  <div class="timer-section test">
+      <div class="timer-display">
+          <span id="timer-text">00:00</span>
+          <span id="completion-message" style="display: none;">You got it! Well done</span>
+      </div>
   </div>
+
+
   <div class="board-area">
     <div class="grid-wrapper" aria-label="Word puzzle grid">
       <div class="grid-stack">
