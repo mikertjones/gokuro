@@ -97,10 +97,15 @@ const toggleButtons = Array.from(document.querySelectorAll('.grid-toggle'));
 const resetButton = document.getElementById('reset-btn');
 const howToPlayButton = document.getElementById('how-to-play-btn');
 const howToPlayModal = document.getElementById('how-to-play-modal');
+const timerText = document.getElementById('timer-text');
+const completionMessage = document.getElementById('completion-message');
 
 let activeKey = null;
 let activeState = null;
 let lastFocusedElement = null;
+let timerIntervalId = null;
+let timerStartTimestamp = 0;
+let puzzleCompleted = false;
 
 function init() {
   toggleButtons.forEach((button) => {
@@ -132,6 +137,7 @@ function setActivePuzzle(key, { force = false } = {}) {
   if (!definition) {
     return;
   }
+  resetTimerState();
 
   activeKey = key;
   activeState = prepareState(definition.data);
@@ -549,6 +555,10 @@ function handleInput(event, state) {
     input.value = cleaned;
   }
 
+  if (cleaned && !timerIntervalId && !puzzleCompleted) {
+    startTimer();
+  }
+
   const prevChar = cell.dataset.prevChar || '';
   const prevTokenId = cell.dataset.tokenId || '';
 
@@ -585,6 +595,7 @@ function handleInput(event, state) {
 
   cell.dataset.prevChar = cleaned;
   updateLetterArrayUsage(state);
+  checkForCompletion(state);
 }
 
 function consumeToken(state, letter) {
@@ -669,6 +680,89 @@ function updateTotalStyles(state) {
   });
 }
 
+function startTimer() {
+  if (timerIntervalId || puzzleCompleted) {
+    return;
+  }
+
+  timerStartTimestamp = Date.now();
+  updateTimerDisplay();
+  timerIntervalId = window.setInterval(updateTimerDisplay, 1000);
+}
+
+function stopTimer() {
+  if (timerIntervalId) {
+    clearInterval(timerIntervalId);
+    timerIntervalId = null;
+  }
+
+  if (timerStartTimestamp) {
+    updateTimerDisplay();
+  }
+}
+
+function resetTimerState() {
+  stopTimer();
+  timerStartTimestamp = 0;
+  puzzleCompleted = false;
+
+  if (timerText) {
+    timerText.textContent = '00:00';
+  }
+  if (completionMessage) {
+    completionMessage.style.display = 'none';
+  }
+}
+
+function updateTimerDisplay() {
+  if (!timerText || !timerStartTimestamp) {
+    if (timerText && !timerIntervalId) {
+      timerText.textContent = '00:00';
+    }
+    return;
+  }
+
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timerStartTimestamp) / 1000));
+  const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+  const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+  timerText.textContent = `${minutes}:${seconds}`;
+}
+
+
+function checkForCompletion(state) {
+  if (puzzleCompleted) {
+    return;
+  }
+
+  if (isPuzzleSolved(state)) {
+    puzzleCompleted = true;
+    stopTimer();
+    if (completionMessage) {
+      completionMessage.style.display = 'inline';
+    }
+  }
+}
+
+function isPuzzleSolved(state) {
+  if (!state || !state.rowCellGroups) {
+    return false;
+  }
+
+  let hasCells = false;
+  for (const rowCells of state.rowCellGroups) {
+    for (const cell of rowCells) {
+      hasCells = true;
+      const target = cell.dataset.letter || '';
+      const current = getCellValue(cell);
+      if (!target || current !== target) {
+        return false;
+      }
+    }
+  }
+
+  return hasCells;
+}
+
 
 function setupHowToPlayModal() {
   if (!howToPlayButton || !howToPlayModal) {
@@ -734,4 +828,5 @@ function incrementMap(map, key) {
 }
 
 init();
+
 
