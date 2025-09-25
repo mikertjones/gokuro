@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       case 'week':
         // Today + previous 6 days (7 days total)
         query = `
-          SELECT id, puzzle_date, configuration, puzzle_data, created_at 
+          SELECT id, puzzle_date, puzzle_data, created_at 
           FROM gokuropuzzles 
           WHERE puzzle_date >= CURRENT_DATE - INTERVAL '6 days'
             AND puzzle_date <= CURRENT_DATE

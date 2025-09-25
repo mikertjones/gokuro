@@ -6,122 +6,274 @@ const vowelSet = new Set(['A', 'E', 'I', 'O', 'U']);
 
 const BASE_CELL_SIZE = 56;
 
-const puzzles = {
-  '5x5': {
-    label: '5x5 Grid',
-    data: {
-      rows: {
-        R3C1_ACROSS: 'WORLD',
-        R1C1_ACROSS: 'LEA',
-        R4C2_ACROSS: 'SILO',
-        R2C1_ACROSS: 'AREA',
-        R5C3_ACROSS: 'EYE',
-      },
-      columns: {
-        C5R3_DOWN: 'DOE',
-        C1R1_DOWN: 'LAW',
-        C2R1_DOWN: 'EROS',
-        C4R2_DOWN: 'ALLY',
-        C3R1_DOWN: 'AERIE',
-      },
-      matrix: ['LEA..', 'AREA.', 'WORLD', '.SILO', '..EYE'],
-      fingerprint: '7fe891344d9734b5caeac06d871f60eb',
-    },
-  },
-  '5x6': {
-    label: '5x6 Grid',
-    data: {
-      rows: {
-        R3C1_ACROSS: 'ABACUS',
-        R4C2_ACROSS: 'EDEN',
-        R1C2_ACROSS: 'REF',
-        R2C2_ACROSS: 'OVER',
-        R5C3_ACROSS: 'EST',
-      },
-      columns: {
-        C2_DOWN: 'ROBE',
-        C4_DOWN: 'FECES',
-        C3_DOWN: 'EVADE',
-        C5_DOWN: 'RUNT',
-      },
-      matrix: ['.REF..', '.OVER.', 'ABACUS', '.EDEN.', '..EST.'],
-      fingerprint: 'a558f5e752ac2fdc7e95025f1dbff680',
-    },
-  },
-  '7x7': {
-    label: '7x7 Diamond',
-    data: {
-      matrix: [
-        '###H###',
-        '##BUS##',
-        '#EARTH#',
-        'ABSTAIN',
-        '#BEFIT#',
-        '##SUN##',
-        '###L###',
-      ],
-      row_words: ['BUS', 'EARTH', 'ABSTAIN', 'BEFIT', 'SUN'],
-      col_words: ['EBB', 'BASES', 'HURTFUL', 'STAIN', 'HIT'],
-      fingerprint: 'abstain_35ff1327',
-    },
-  },
+const API_BASE = 'https://gokuro.vercel.app/api/puzzles';
+const WEEK_PATH = '/week';
 
-/*  '7x7-offset': {
-    label: '7x7 OFFSET',
-    data: {
-      matrix: [
-        '.ELM...',
-        '.PAIN..',
-        '.ONSET.',
-        'ACCLAIM',
-        '.HEART.',
-        '..TILL.',
-        '...DYE.',
-      ],
-      row_words: ['ELM', 'PAIN', 'ONSET', 'ACCLAIM', 'HEART', 'TILL', 'DYE'],
-      col_words: ['EPOCH', 'LANCET', 'MISLAID', 'NEARLY', 'TITLE'],
-      fingerprint: 'acclaim_9903ef96',
-    },
-  },
-*/
-  '7x7-offset': {
-    label: '7x7 OFFSET',
-    data: {
-      matrix: [
-        "###coo#",
-        "##bout#",
-        "#boast#",
-        "glisten",
-        "#alter#",
-        "#seer##",
-        "#err###"
-      ],
-      row_words: [
-        "coo",
-        "bout",
-        "boast",
-        "glisten",
-        "alter",
-        "seer",
-        "err"
-      ],
-      col_words: [
-        "blase",
-        "boiler",
-        "coaster",
-        "ouster",
-        "otter"
-      ],
-      fingerprint : 'glisten_110fd9af',
-    },
+let puzzles = {};
+let maxTotalCols = 0;
+
+// Legacy inline dataset retained for reference.
+// const puzzles = {
+//   '5x5': {
+//     label: '5x5 Grid',
+//     data: {
+//       rows: {
+//         R3C1_ACROSS: 'WORLD',
+//         R1C1_ACROSS: 'LEA',
+//         R4C2_ACROSS: 'SILO',
+//         R2C1_ACROSS: 'AREA',
+//         R5C3_ACROSS: 'EYE',
+//       },
+//       columns: {
+//         C5R3_DOWN: 'DOE',
+//         C1R1_DOWN: 'LAW',
+//         C2R1_DOWN: 'EROS',
+//         C4R2_DOWN: 'ALLY',
+//         C3R1_DOWN: 'AERIE',
+//       },
+//       matrix: ['LEA..', 'AREA.', 'WORLD', '.SILO', '..EYE'],
+//       fingerprint: '7fe891344d9734b5caeac06d871f60eb',
+//     },
+//   },
+//   '5x6': {
+//     label: '5x6 Grid',
+//     data: {
+//       rows: {
+//         R3C1_ACROSS: 'ABACUS',
+//         R4C2_ACROSS: 'EDEN',
+//         R1C2_ACROSS: 'REF',
+//         R2C2_ACROSS: 'OVER',
+//         R5C3_ACROSS: 'EST',
+//       },
+//       columns: {
+//         C2_DOWN: 'ROBE',
+//         C4_DOWN: 'FECES',
+//         C3_DOWN: 'EVADE',
+//         C5_DOWN: 'RUNT',
+//       },
+//       matrix: ['.REF..', '.OVER.', 'ABACUS', '.EDEN.', '..EST.'],
+//       fingerprint: 'a558f5e752ac2fdc7e95025f1dbff680',
+//     },
+//   },
+//   '7x7': {
+//     label: '7x7 Diamond',
+//     data: {
+//       matrix: [
+//         '###H###',
+//         '##BUS##',
+//         '#EARTH#',
+//         'ABSTAIN',
+//         '#BEFIT#',
+//         '##SUN##',
+//         '###L###',
+//       ],
+//       row_words: ['BUS', 'EARTH', 'ABSTAIN', 'BEFIT', 'SUN'],
+//       col_words: ['EBB', 'BASES', 'HURTFUL', 'STAIN', 'HIT'],
+//       fingerprint: 'abstain_35ff1327',
+//     },
+//   },
+// 
+// /*  '7x7-offset': {
+//     label: '7x7 OFFSET',
+//     data: {
+//       matrix: [
+//         '.ELM...',
+//         '.PAIN..',
+//         '.ONSET.',
+//         'ACCLAIM',
+//         '.HEART.',
+//         '..TILL.',
+//         '...DYE.',
+//       ],
+//       row_words: ['ELM', 'PAIN', 'ONSET', 'ACCLAIM', 'HEART', 'TILL', 'DYE'],
+//       col_words: ['EPOCH', 'LANCET', 'MISLAID', 'NEARLY', 'TITLE'],
+//       fingerprint: 'acclaim_9903ef96',
+//     },
+//   },
+// */
+//   '7x7-offset': {
+//     label: '7x7 OFFSET',
+//     data: {
+//       matrix: [
+//         "###coo#",
+//         "##bout#",
+//         "#boast#",
+//         "glisten",
+//         "#alter#",
+//         "#seer##",
+//         "#err###"
+//       ],
+//       row_words: [
+//         "coo",
+//         "bout",
+//         "boast",
+//         "glisten",
+//         "alter",
+//         "seer",
+//         "err"
+//       ],
+//       col_words: [
+//         "blase",
+//         "boiler",
+//         "coaster",
+//         "ouster",
+//         "otter"
+//       ],
+//       fingerprint : 'glisten_110fd9af',
+//     },
+//   }
+// };
+// 
+// const maxTotalCols = Object.values(puzzles).reduce((max, puzzle) => {
+//   const matrix = puzzle.data.matrix || [];
+//   const cols = matrix[0] ? matrix[0].length : 0;
+//   return Math.max(max, cols + 1);
+// }, 0);
+
+
+function computeMaxTotalCols(source) {
+  return Object.values(source || {}).reduce((max, puzzle) => {
+    const matrix = puzzle?.data?.matrix || [];
+    const cols = matrix[0] ? matrix[0].length : 0;
+    return Math.max(max, cols + 1);
+  }, 0);
+}
+
+function setPuzzlesMap(nextPuzzles) {
+  puzzles = nextPuzzles || {};
+  maxTotalCols = computeMaxTotalCols(puzzles);
+}
+
+function extractPuzzlesFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
   }
-};
+  if (payload.puzzles && typeof payload.puzzles === 'object') {
+    return payload.puzzles;
+  }
+  if (payload.week && typeof payload.week === 'object') {
+    return payload.week;
+  }
+  return payload;
+}
 
-const maxTotalCols = Object.values(puzzles).reduce((max, puzzle) => {
-  const matrix = puzzle.data.matrix || [];
-  const cols = matrix[0] ? matrix[0].length : 0;
-  return Math.max(max, cols + 1);
-}, 0);
+function getFallbackPuzzles() {
+  return {
+    '5x5': {
+      label: '5x5 Grid',
+      data: {
+        rows: {
+          R3C1_ACROSS: 'WORLD',
+          R1C1_ACROSS: 'LEA',
+          R4C2_ACROSS: 'SILO',
+          R2C1_ACROSS: 'AREA',
+          R5C3_ACROSS: 'EYE',
+        },
+        columns: {
+          C5R3_DOWN: 'DOE',
+          C1R1_DOWN: 'LAW',
+          C2R1_DOWN: 'EROS',
+          C4R2_DOWN: 'ALLY',
+          C3R1_DOWN: 'AERIE',
+        },
+        matrix: ['LEA..', 'AREA.', 'WORLD', '.SILO', '..EYE'],
+        fingerprint: '7fe891344d9734b5caeac06d871f60eb',
+      },
+    },
+    '5x6': {
+      label: '5x6 Grid',
+      data: {
+        rows: {
+          R3C1_ACROSS: 'ABACUS',
+          R4C2_ACROSS: 'EDEN',
+          R1C2_ACROSS: 'REF',
+          R2C2_ACROSS: 'OVER',
+          R5C3_ACROSS: 'EST',
+        },
+        columns: {
+          C2_DOWN: 'ROBE',
+          C4_DOWN: 'FECES',
+          C3_DOWN: 'EVADE',
+          C5_DOWN: 'RUNT',
+        },
+        matrix: ['.REF..', '.OVER.', 'ABACUS', '.EDEN.', '..EST.'],
+        fingerprint: 'a558f5e752ac2fdc7e95025f1dbff680',
+      },
+    },
+    '7x7': {
+      label: '7x7 Diamond',
+      data: {
+        matrix: [
+          '###H###',
+          '##BUS##',
+          '#EARTH#',
+          'ABSTAIN',
+          '#BEFIT#',
+          '##SUN##',
+          '###L###',
+        ],
+        row_words: ['BUS', 'EARTH', 'ABSTAIN', 'BEFIT', 'SUN'],
+        col_words: ['EBB', 'BASES', 'HURTFUL', 'STAIN', 'HIT'],
+        fingerprint: 'abstain_35ff1327',
+      },
+    },
+    '7x7-offset': {
+      label: '7x7 OFFSET',
+      data: {
+        matrix: [
+          '###coo#',
+          '##bout#',
+          '#boast#',
+          'glisten',
+          '#alter#',
+          '#seer##',
+          '#err###',
+        ],
+        row_words: ['coo', 'bout', 'boast', 'glisten', 'alter', 'seer', 'err'],
+        col_words: ['blase', 'boiler', 'coaster', 'ouster', 'otter'],
+        fingerprint: 'glisten_110fd9af',
+      },
+    },
+  };
+}
+
+function ensurePuzzlesLoaded() {
+  if (!puzzles || Object.keys(puzzles).length === 0) {
+    setPuzzlesMap(getFallbackPuzzles());
+  }
+}
+
+async function loadPuzzles() {
+  let resolved = null;
+
+  if (typeof fetch !== 'function') {
+    console.error('Fetch API is unavailable in this environment. Using fallback puzzles.');
+    setPuzzlesMap(getFallbackPuzzles());
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}${WEEK_PATH}`);
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    const payload = await response.json();
+    resolved = extractPuzzlesFromPayload(payload);
+  } catch (error) {
+    console.error('Failed to load puzzles from API', error);
+  }
+
+  if (!resolved || Array.isArray(resolved) || typeof resolved !== 'object' || Object.keys(resolved).length === 0) {
+    resolved = getFallbackPuzzles();
+  }
+
+  setPuzzlesMap(resolved);
+}
+
+async function bootstrap() {
+  await loadPuzzles();
+  init();
+}
 
 const gridEl = document.getElementById('puzzle-grid');
 const letterTableBody = document.getElementById('letter-tally');
@@ -158,7 +310,11 @@ function init() {
 
   window.addEventListener('resize', handleResize);
   setupHowToPlayModal();
-  setActivePuzzle('5x5', { force: true });
+  ensurePuzzlesLoaded();
+  const defaultKey = puzzles['5x5'] ? '5x5' : Object.keys(puzzles)[0];
+  if (defaultKey) {
+    setActivePuzzle(defaultKey, { force: true });
+  }
 }
 
 function setActivePuzzle(key, { force = false } = {}) {
@@ -166,6 +322,7 @@ function setActivePuzzle(key, { force = false } = {}) {
     return;
   }
 
+  ensurePuzzlesLoaded();
   const definition = puzzles[key];
   if (!definition) {
     return;
@@ -187,7 +344,13 @@ function setActivePuzzle(key, { force = false } = {}) {
 
 function renderButtons() {
   toggleButtons.forEach((btn) => {
-    const isActive = btn.dataset.puzzle === activeKey;
+    const key = btn.dataset.puzzle || '';
+    const hasPuzzle = Boolean(puzzles[key]);
+    btn.disabled = !hasPuzzle;
+    btn.classList.toggle('unavailable', !hasPuzzle);
+    btn.setAttribute('aria-disabled', String(!hasPuzzle));
+
+    const isActive = key === activeKey;
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', String(isActive));
   });
@@ -860,6 +1023,7 @@ function incrementMap(map, key) {
   map.set(key, (map.get(key) || 0) + 1);
 }
 
-init();
+bootstrap();
+
 
 

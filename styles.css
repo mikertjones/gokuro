@@ -134,6 +134,12 @@ h1 {
 .grid-toggle:not(.active):hover {
   background: rgba(37, 99, 235, 0.12);
 }
+.grid-toggle[disabled],
+.grid-toggle.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
 
 .modal {
