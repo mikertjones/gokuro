@@ -65,7 +65,8 @@ const puzzles = {
       fingerprint: 'abstain_35ff1327',
     },
   },
-  '7x7-offset': {
+
+/*  '7x7-offset': {
     label: '7x7 OFFSET',
     data: {
       matrix: [
@@ -82,6 +83,38 @@ const puzzles = {
       fingerprint: 'acclaim_9903ef96',
     },
   },
+*/
+  '7x7-offset': {
+    label: '7x7 OFFSET',
+    data: {
+      matrix: [
+        "###coo#",
+        "##bout#",
+        "#boast#",
+        "glisten",
+        "#alter#",
+        "#seer##",
+        "#err###"
+      ],
+      row_words: [
+        "coo",
+        "bout",
+        "boast",
+        "glisten",
+        "alter",
+        "seer",
+        "err"
+      ],
+      col_words: [
+        "blase",
+        "boiler",
+        "coaster",
+        "ouster",
+        "otter"
+      ],
+      fingerprint : 'glisten_110fd9af',
+    },
+  }
 };
 
 const maxTotalCols = Object.values(puzzles).reduce((max, puzzle) => {
