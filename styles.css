@@ -396,8 +396,8 @@ h1 {
 }
 
 .letter-card-token {
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--token-bg);
   opacity: 0.65;

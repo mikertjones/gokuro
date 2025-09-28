@@ -220,7 +220,7 @@ function getFallbackPuzzles() {
     '7x7-offset': {
       label: '7x7 OFFSET',
       data: {
-        matrix: [
+/*        matrix: [
           '###coo#',
           '##bout#',
           '#boast#',
@@ -230,8 +230,40 @@ function getFallbackPuzzles() {
           '#err###',
         ],
         row_words: ['coo', 'bout', 'boast', 'glisten', 'alter', 'seer', 'err'],
-        col_words: ['blase', 'boiler', 'coaster', 'ouster', 'otter'],
-        fingerprint: 'glisten_110fd9af',
+        col_words: ['blase', 'boiler', 'coaster', 'ouster', 'otter'],*/
+        fingerprint: 'blender_13016df3',
+
+        matrix: [
+          "#woo###",
+          "born###",
+          "ordeal#",
+          "blender",
+          "#dredge",
+          "###slid",
+          "###set#"
+        ],
+        row_words: [
+          "woo",
+          "born",
+          "ordeal",
+          "blender",
+          "dredge",
+          "slid",
+          "set"
+        ],
+        col_words: [
+          "bob",
+          "world",
+          "order",
+          "oneness",
+          "addle",
+          "legit",
+          "red"
+        ],
+
+
+
+
       },
     },
   };
