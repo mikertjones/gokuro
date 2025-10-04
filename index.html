@@ -14,10 +14,15 @@
   </div>
 
   <div class="toggle-buttons" role="group" aria-label="Grid size selection">
-    <button type="button" class="grid-toggle active" data-puzzle="5x5">5x5 Grid</button>
-    <button type="button" class="grid-toggle" data-puzzle="5x6">5x6 Grid</button>
-    <button type="button" class="grid-toggle" data-puzzle="7x7">7x7 DIAMOND</button>
-    <button type="button" class="grid-toggle" data-puzzle="7x7-offset">7x7 OFFSET</button>
+    <button type="button" class="grid-toggle active" data-puzzle="5x5">5x5</button>
+    <button type="button" class="grid-toggle" data-puzzle="5x6">5x6</button>
+    <button type="button" class="grid-toggle" data-puzzle="6x7">6x7</button>
+    <button type="button" class="grid-toggle" data-puzzle="7x7">7x7</button>
+  </div>
+  <div class="day-navigation" role="group" aria-label="Puzzle day selection">
+    <button type="button" id="prev-day-btn" class="day-nav-button" aria-label="Previous day's puzzles">&larr; Previous</button>
+    <span id="active-day-label" class="day-label" aria-live="polite">Loading...</span>
+    <button type="button" id="next-day-btn" class="day-nav-button" aria-label="Next day's puzzles">Next &rarr;</button>
   </div>
 
   <!-- Timer Section - Centered -->

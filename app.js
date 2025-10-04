@@ -6,130 +6,15 @@ const vowelSet = new Set(['A', 'E', 'I', 'O', 'U']);
 
 const BASE_CELL_SIZE = 56;
 
-const API_BASE = 'https://gokuro.vercel.app/api/puzzles';
-const WEEK_PATH = '/week';
 
+const API_BASE = '/api/puzzles';
+const WEEK_PATH = '/week';
+const VALID_PUZZLE_KEYS = ['5x5', '5x6', '6x7', '7x7'];
+
+let weeklyEntries = [];
+let activeDayIndex = 0;
 let puzzles = {};
 let maxTotalCols = 0;
-
-// Legacy inline dataset retained for reference.
-// const puzzles = {
-//   '5x5': {
-//     label: '5x5 Grid',
-//     data: {
-//       rows: {
-//         R3C1_ACROSS: 'WORLD',
-//         R1C1_ACROSS: 'LEA',
-//         R4C2_ACROSS: 'SILO',
-//         R2C1_ACROSS: 'AREA',
-//         R5C3_ACROSS: 'EYE',
-//       },
-//       columns: {
-//         C5R3_DOWN: 'DOE',
-//         C1R1_DOWN: 'LAW',
-//         C2R1_DOWN: 'EROS',
-//         C4R2_DOWN: 'ALLY',
-//         C3R1_DOWN: 'AERIE',
-//       },
-//       matrix: ['LEA..', 'AREA.', 'WORLD', '.SILO', '..EYE'],
-//       fingerprint: '7fe891344d9734b5caeac06d871f60eb',
-//     },
-//   },
-//   '5x6': {
-//     label: '5x6 Grid',
-//     data: {
-//       rows: {
-//         R3C1_ACROSS: 'ABACUS',
-//         R4C2_ACROSS: 'EDEN',
-//         R1C2_ACROSS: 'REF',
-//         R2C2_ACROSS: 'OVER',
-//         R5C3_ACROSS: 'EST',
-//       },
-//       columns: {
-//         C2_DOWN: 'ROBE',
-//         C4_DOWN: 'FECES',
-//         C3_DOWN: 'EVADE',
-//         C5_DOWN: 'RUNT',
-//       },
-//       matrix: ['.REF..', '.OVER.', 'ABACUS', '.EDEN.', '..EST.'],
-//       fingerprint: 'a558f5e752ac2fdc7e95025f1dbff680',
-//     },
-//   },
-//   '7x7': {
-//     label: '7x7 Diamond',
-//     data: {
-//       matrix: [
-//         '###H###',
-//         '##BUS##',
-//         '#EARTH#',
-//         'ABSTAIN',
-//         '#BEFIT#',
-//         '##SUN##',
-//         '###L###',
-//       ],
-//       row_words: ['BUS', 'EARTH', 'ABSTAIN', 'BEFIT', 'SUN'],
-//       col_words: ['EBB', 'BASES', 'HURTFUL', 'STAIN', 'HIT'],
-//       fingerprint: 'abstain_35ff1327',
-//     },
-//   },
-// 
-// /*  '7x7-offset': {
-//     label: '7x7 OFFSET',
-//     data: {
-//       matrix: [
-//         '.ELM...',
-//         '.PAIN..',
-//         '.ONSET.',
-//         'ACCLAIM',
-//         '.HEART.',
-//         '..TILL.',
-//         '...DYE.',
-//       ],
-//       row_words: ['ELM', 'PAIN', 'ONSET', 'ACCLAIM', 'HEART', 'TILL', 'DYE'],
-//       col_words: ['EPOCH', 'LANCET', 'MISLAID', 'NEARLY', 'TITLE'],
-//       fingerprint: 'acclaim_9903ef96',
-//     },
-//   },
-// */
-//   '7x7-offset': {
-//     label: '7x7 OFFSET',
-//     data: {
-//       matrix: [
-//         "###coo#",
-//         "##bout#",
-//         "#boast#",
-//         "glisten",
-//         "#alter#",
-//         "#seer##",
-//         "#err###"
-//       ],
-//       row_words: [
-//         "coo",
-//         "bout",
-//         "boast",
-//         "glisten",
-//         "alter",
-//         "seer",
-//         "err"
-//       ],
-//       col_words: [
-//         "blase",
-//         "boiler",
-//         "coaster",
-//         "ouster",
-//         "otter"
-//       ],
-//       fingerprint : 'glisten_110fd9af',
-//     },
-//   }
-// };
-// 
-// const maxTotalCols = Object.values(puzzles).reduce((max, puzzle) => {
-//   const matrix = puzzle.data.matrix || [];
-//   const cols = matrix[0] ? matrix[0].length : 0;
-//   return Math.max(max, cols + 1);
-// }, 0);
-
 
 function computeMaxTotalCols(source) {
   return Object.values(source || {}).reduce((max, puzzle) => {
@@ -144,20 +29,19 @@ function setPuzzlesMap(nextPuzzles) {
   maxTotalCols = computeMaxTotalCols(puzzles);
 }
 
-function extractPuzzlesFromPayload(payload) {
-  if (!payload || typeof payload !== 'object') {
-    return null;
-  }
-  if (payload.puzzles && typeof payload.puzzles === 'object') {
-    return payload.puzzles;
-  }
-  if (payload.week && typeof payload.week === 'object') {
-    return payload.week;
-  }
-  return payload;
+function getFallbackWeekEntries() {
+  const today = new Date();
+  return Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    return {
+      puzzleDate: date.toISOString().slice(0, 10),
+      puzzleMap: buildFallbackPuzzleMap(),
+    };
+  });
 }
 
-function getFallbackPuzzles() {
+function buildFallbackPuzzleMap() {
   return {
     '5x5': {
       label: '5x5 Grid',
@@ -200,8 +84,25 @@ function getFallbackPuzzles() {
         fingerprint: 'a558f5e752ac2fdc7e95025f1dbff680',
       },
     },
+    '6x7': {
+      label: '6x7 Grid',
+      data: {
+        matrix: [
+          '##BEND',
+          '#ALERT',
+          'PUZZLE',
+          'LETTER',
+          'STREAM',
+          'REVEAL',
+          '##ENDS',
+        ],
+        row_words: ['BEND', 'ALERT', 'PUZZLE', 'LETTER', 'STREAM', 'REVEAL', 'ENDS'],
+        col_words: ['PSLR', 'ULEET', 'ZEARM', 'ZTELN', 'LEEAR', 'EDLEV'],
+        fingerprint: 'fallback_6x7_demo',
+      },
+    },
     '7x7': {
-      label: '7x7 Diamond',
+      label: '7x7 Grid',
       data: {
         matrix: [
           '###H###',
@@ -217,96 +118,347 @@ function getFallbackPuzzles() {
         fingerprint: 'abstain_35ff1327',
       },
     },
-    '7x7-offset': {
-      label: '7x7 OFFSET',
-      data: {
-/*        matrix: [
-          '###coo#',
-          '##bout#',
-          '#boast#',
-          'glisten',
-          '#alter#',
-          '#seer##',
-          '#err###',
-        ],
-        row_words: ['coo', 'bout', 'boast', 'glisten', 'alter', 'seer', 'err'],
-        col_words: ['blase', 'boiler', 'coaster', 'ouster', 'otter'],*/
-        fingerprint: 'blender_13016df3',
-
-        matrix: [
-          "#woo###",
-          "born###",
-          "ordeal#",
-          "blender",
-          "#dredge",
-          "###slid",
-          "###set#"
-        ],
-        row_words: [
-          "woo",
-          "born",
-          "ordeal",
-          "blender",
-          "dredge",
-          "slid",
-          "set"
-        ],
-        col_words: [
-          "bob",
-          "world",
-          "order",
-          "oneness",
-          "addle",
-          "legit",
-          "red"
-        ],
-
-
-
-
-      },
-    },
   };
 }
 
-function ensurePuzzlesLoaded() {
-  if (!puzzles || Object.keys(puzzles).length === 0) {
-    setPuzzlesMap(getFallbackPuzzles());
-  }
-}
-
-async function loadPuzzles() {
-  let resolved = null;
+async function loadWeeklyPuzzles() {
+  const fallbackEntries = getFallbackWeekEntries();
 
   if (typeof fetch !== 'function') {
     console.error('Fetch API is unavailable in this environment. Using fallback puzzles.');
-    setPuzzlesMap(getFallbackPuzzles());
+    setWeeklyEntries(fallbackEntries);
     return;
   }
 
   try {
-    const response = await fetch(`${API_BASE}${WEEK_PATH}`);
+    const response = await fetch(API_BASE + WEEK_PATH, { cache: 'no-store' });
     if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
+      throw new Error('Request failed with status ' + response.status);
     }
     const payload = await response.json();
-    resolved = extractPuzzlesFromPayload(payload);
+    const entries = normalizeWeekPayload(payload);
+    if (entries.length > 0) {
+      setWeeklyEntries(entries);
+      return;
+    }
   } catch (error) {
     console.error('Failed to load puzzles from API', error);
   }
 
-  if (!resolved || Array.isArray(resolved) || typeof resolved !== 'object' || Object.keys(resolved).length === 0) {
-    resolved = getFallbackPuzzles();
+  setWeeklyEntries(fallbackEntries);
+}
+
+function setWeeklyEntries(entries) {
+  const normalized = Array.isArray(entries)
+    ? entries.map(normalizeWeekEntry).filter((entry) => entry && Object.keys(entry.puzzleMap || {}).length > 0)
+    : [];
+
+  if (normalized.length === 0) {
+    weeklyEntries = [];
+    puzzles = {};
+    maxTotalCols = 0;
+    activeDayIndex = 0;
+    updateDayNavigationUI(null);
+    clearGridOutputs();
+    renderButtons();
+    return;
   }
 
-  setPuzzlesMap(resolved);
+  normalized.sort((a, b) => getTimeValue(b.puzzleDate) - getTimeValue(a.puzzleDate));
+
+  weeklyEntries = normalized;
+  activeDayIndex = 0;
+  applyDayEntry(0, { maintainSelection: false });
+}
+
+function normalizeWeekPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const candidates = [];
+  if (Array.isArray(payload.days)) {
+    candidates.push(...payload.days);
+  } else if (Array.isArray(payload.rows)) {
+    candidates.push(...payload.rows);
+  } else if (Array.isArray(payload.puzzles)) {
+    candidates.push(...payload.puzzles);
+  } else if (Array.isArray(payload)) {
+    candidates.push(...payload);
+  }
+
+  return candidates.map(normalizeWeekEntry).filter(Boolean);
+}
+
+function normalizeWeekEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  if (entry.puzzleMap && typeof entry.puzzleMap === 'object') {
+    const sanitizedMap = {};
+    for (const key of VALID_PUZZLE_KEYS) {
+      if (entry.puzzleMap[key]) {
+        const sanitized = ensurePuzzleEntry(entry.puzzleMap[key], key);
+        if (sanitized) {
+          sanitizedMap[key] = sanitized;
+        }
+      }
+    }
+    if (Object.keys(sanitizedMap).length === 0) {
+      return null;
+    }
+    return {
+      puzzleDate: normalizeDateString(entry.puzzleDate || entry.puzzle_date || entry.date || null),
+      puzzleMap: sanitizedMap,
+      metadata: entry.metadata || entry,
+    };
+  }
+
+  const puzzleMap = parseDailyPuzzleMap(
+    entry.puzzle_data || entry.puzzleData || entry.data || entry.puzzles || entry
+  );
+
+  if (!puzzleMap || Object.keys(puzzleMap).length === 0) {
+    return null;
+  }
+
+  return {
+    puzzleDate: normalizeDateString(entry.puzzle_date || entry.puzzleDate || entry.date || entry.day || null),
+    puzzleMap,
+    metadata: {
+      id: entry.id ?? null,
+      createdAt: entry.created_at ?? entry.createdAt ?? null,
+    },
+  };
+}
+
+function parseDailyPuzzleMap(raw) {
+  const parsed = parseJsonMaybe(raw);
+  if (!parsed || typeof parsed !== 'object') {
+    return null;
+  }
+
+  const source =
+    parsed.puzzles && typeof parsed.puzzles === 'object' && !Array.isArray(parsed.puzzles)
+      ? parsed.puzzles
+      : parsed;
+
+  const mapped = {};
+  for (const [rawKey, value] of Object.entries(source)) {
+    const normalizedKey = normalizePuzzleKey(rawKey);
+    if (!normalizedKey || !VALID_PUZZLE_KEYS.includes(normalizedKey)) {
+      continue;
+    }
+    const entry = ensurePuzzleEntry(value, normalizedKey);
+    if (entry) {
+      mapped[normalizedKey] = entry;
+    }
+  }
+
+  return mapped;
+}
+
+function parseJsonMaybe(raw) {
+  if (raw == null) {
+    return null;
+  }
+  if (typeof raw === 'object') {
+    return raw;
+  }
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      console.error('Unable to parse puzzle JSON', error);
+      return null;
+    }
+  }
+  return null;
+}
+
+function normalizePuzzleKey(rawKey) {
+  if (!rawKey) {
+    return null;
+  }
+  const match = String(rawKey).trim().toLowerCase().match(/(\d+)\s*x\s*(\d+)/);
+  return match ? match[1] + 'x' + match[2] : null;
+}
+
+function formatPuzzleLabel(key) {
+  return key ? key.toUpperCase() + ' Grid' : 'Puzzle';
+}
+
+function ensurePuzzleEntry(rawValue, key) {
+  if (!rawValue || typeof rawValue !== 'object') {
+    return null;
+  }
+
+  const label =
+    typeof rawValue.label === 'string' && rawValue.label.trim()
+      ? rawValue.label.trim()
+      : formatPuzzleLabel(key);
+
+  const data =
+    rawValue.data && typeof rawValue.data === 'object' ? rawValue.data : { ...rawValue };
+
+  if (!Array.isArray(data.matrix) || data.matrix.length === 0) {
+    return null;
+  }
+
+  return {
+    label,
+    data,
+  };
+}
+
+function normalizeDateString(value) {
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  const str = String(value);
+  const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    return match[1];
+  }
+  const date = new Date(str);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toISOString().slice(0, 10);
+  }
+  return str;
+}
+
+function getTimeValue(dateString) {
+  if (!dateString) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  const date = new Date(dateString);
+  if (!Number.isNaN(date.getTime())) {
+    return date.getTime();
+  }
+  return Number.NEGATIVE_INFINITY;
+}
+
+function applyDayEntry(index, { maintainSelection = false } = {}) {
+  const entry = weeklyEntries[index];
+  if (!entry) {
+    return;
+  }
+
+  activeDayIndex = index;
+  const puzzleMap = entry.puzzleMap || {};
+  const availableKeys = getAvailablePuzzleKeys(puzzleMap);
+  const preferredKey =
+    maintainSelection && activeKey && puzzleMap[activeKey] ? activeKey : availableKeys[0] || null;
+
+  setPuzzlesMap(puzzleMap);
+  updateDayNavigationUI(entry);
+
+  if (preferredKey) {
+    setActivePuzzle(preferredKey, { force: true });
+  } else {
+    activeKey = null;
+    activeState = null;
+    renderButtons();
+    clearGridOutputs();
+  }
+}
+
+function getAvailablePuzzleKeys(target = puzzles) {
+  const map = target || {};
+  return VALID_PUZZLE_KEYS.filter((key) => map[key]);
+}
+
+function updateDayNavigationUI(entry) {
+  if (dayLabel) {
+    if (entry?.puzzleDate) {
+      dayLabel.textContent = formatDisplayDate(entry.puzzleDate);
+      dayLabel.dataset.activeDate = entry.puzzleDate;
+    } else {
+      dayLabel.textContent = 'No puzzle date';
+      delete dayLabel.dataset.activeDate;
+    }
+  }
+
+  const hasEntries = weeklyEntries.length > 0;
+  if (prevDayButton) {
+    prevDayButton.disabled = !hasEntries || activeDayIndex >= weeklyEntries.length - 1;
+  }
+  if (nextDayButton) {
+    nextDayButton.disabled = !hasEntries || activeDayIndex <= 0;
+  }
+}
+
+function formatDisplayDate(value) {
+  if (!value) {
+    return 'Unknown date';
+  }
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+  return String(value);
+}
+
+function navigateDay(offset) {
+  if (!Number.isInteger(offset) || offset === 0 || weeklyEntries.length === 0) {
+    return;
+  }
+  const nextIndex = activeDayIndex + offset;
+  if (nextIndex < 0 || nextIndex >= weeklyEntries.length) {
+    return;
+  }
+  applyDayEntry(nextIndex, { maintainSelection: true });
+}
+
+function setupDayNavigation() {
+  if (prevDayButton) {
+    prevDayButton.addEventListener('click', () => navigateDay(1));
+  }
+  if (nextDayButton) {
+    nextDayButton.addEventListener('click', () => navigateDay(-1));
+  }
+}
+
+function clearGridOutputs() {
+  if (gridEl) {
+    gridEl.innerHTML = '';
+  }
+  if (letterArrayEl) {
+    letterArrayEl.innerHTML = '';
+  }
+  if (letterTableBody) {
+    letterTableBody.innerHTML = '';
+  }
+}
+
+function ensurePuzzlesLoaded() {
+  if (puzzles && Object.keys(puzzles).length > 0) {
+    return;
+  }
+  if (weeklyEntries.length > 0) {
+    const entry = weeklyEntries[activeDayIndex] || weeklyEntries[0];
+    if (entry) {
+      setPuzzlesMap(entry.puzzleMap || {});
+      updateDayNavigationUI(entry);
+    }
+    return;
+  }
+  setWeeklyEntries(getFallbackWeekEntries());
 }
 
 async function bootstrap() {
-  await loadPuzzles();
+  await loadWeeklyPuzzles();
   init();
 }
-
 const gridEl = document.getElementById('puzzle-grid');
 const letterTableBody = document.getElementById('letter-tally');
 const letterArrayEl = document.getElementById('letter-array');
@@ -316,6 +468,9 @@ const howToPlayButton = document.getElementById('how-to-play-btn');
 const howToPlayModal = document.getElementById('how-to-play-modal');
 const timerText = document.getElementById('timer-text');
 const completionMessage = document.getElementById('completion-message');
+const dayLabel = document.getElementById('active-day-label');
+const prevDayButton = document.getElementById('prev-day-btn');
+const nextDayButton = document.getElementById('next-day-btn');
 
 let activeKey = null;
 let activeState = null;
@@ -340,12 +495,27 @@ function init() {
     });
   }
 
+  setupDayNavigation();
   window.addEventListener('resize', handleResize);
   setupHowToPlayModal();
+
   ensurePuzzlesLoaded();
-  const defaultKey = puzzles['5x5'] ? '5x5' : Object.keys(puzzles)[0];
-  if (defaultKey) {
-    setActivePuzzle(defaultKey, { force: true });
+
+  if (!activeKey) {
+    const defaultKey = getAvailablePuzzleKeys()[0];
+    if (defaultKey) {
+      setActivePuzzle(defaultKey, { force: true });
+    } else {
+      renderButtons();
+    }
+  } else {
+    renderButtons();
+  }
+
+  if (weeklyEntries.length > 0) {
+    updateDayNavigationUI(weeklyEntries[activeDayIndex]);
+  } else {
+    updateDayNavigationUI(null);
   }
 }
 
@@ -381,6 +551,12 @@ function renderButtons() {
     btn.disabled = !hasPuzzle;
     btn.classList.toggle('unavailable', !hasPuzzle);
     btn.setAttribute('aria-disabled', String(!hasPuzzle));
+
+    if (hasPuzzle && puzzles[key]?.label) {
+      btn.setAttribute('title', puzzles[key].label);
+    } else {
+      btn.removeAttribute('title');
+    }
 
     const isActive = key === activeKey;
     btn.classList.toggle('active', isActive);
@@ -1056,6 +1232,3 @@ function incrementMap(map, key) {
 }
 
 bootstrap();
-
-
-
