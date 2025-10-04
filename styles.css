@@ -370,10 +370,12 @@ h1 {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 14px;
   min-height: 80px;
-  padding: 18px 16px;
+  padding: 18px 16px 10px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 12px;
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -422,6 +424,7 @@ h1 {
 .letter-card-letter {
   font-size: 1.4rem;
   line-height: 1;
+  margin-top: 6px;
 }
 
 .letter-card-value {
@@ -433,27 +436,26 @@ h1 {
   color: #1e3a8a;
 }
 
-.letter-card-token-strip {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-}
-
-.letter-card-token {
-  width: 5px;
-  height: 5px;
+.letter-card-count {
+  margin-top: 0px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: var(--token-bg);
-  opacity: 0.65;
-  transition: opacity 0.2s ease, background 0.2s ease;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  letter-spacing: 0;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.letter-card-token.used {
-  background: var(--token-bg-used);
-  opacity: 0.65;
+.letter-card.depleted .letter-card-count {
+  background: #fca5a5;
+  color: #7f1d1d;
 }
 
 .cell {
@@ -678,7 +680,7 @@ h1 {
   }
   .letter-card {
     min-height: 80px;
-    padding: 16px 14px;
+    padding: 16px 14px 22px;
     font-size: 1.4rem;
   }
   .letter-card-letter {
@@ -755,19 +757,17 @@ h1 {
   }
   .letter-card {
     min-height: 72px;
-    padding: 14px 12px;
+    padding: 14px 12px 20px;
     font-size: 1.3rem;
+    gap: 10px;
   }
   .letter-card-letter {
     font-size: 1.6rem;
   }
-  .letter-card-token-strip {
-    bottom: 8px;
-    gap: 4px;
-  }
-  .letter-card-token {
-    width: 10px;
-    height: 10px;
+  .letter-card-count {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
   }
   .letter-table {
     font-size: 0.9rem;
@@ -823,19 +823,17 @@ h1 {
   }
   .letter-card {
     min-height: 66px;
-    padding: 12px 10px;
+    padding: 12px 10px 18px;
     font-size: 1.2rem;
+    gap: 8px;
   }
   .letter-card-letter {
     font-size: 1.4rem;
   }
-  .letter-card-token-strip {
-    bottom: 6px;
-    gap: 3px;
-  }
-  .letter-card-token {
-    width: 9px;
-    height: 9px;
+  .letter-card-count {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
   }
   .letter-table th,
   .letter-table td {

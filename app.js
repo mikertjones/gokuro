@@ -859,19 +859,14 @@ function createLetterCard(entry, state, type) {
   valueEl.textContent = letterValues[letter];
   card.appendChild(valueEl);
 
-  const tokenStrip = document.createElement('div');
-  tokenStrip.className = 'letter-card-token-strip';
-  card.appendChild(tokenStrip);
-
-  if (present && count > 0) {
-    const tokens = [];
-    for (let i = 0; i < count; i += 1) {
-      const pip = document.createElement('span');
-      pip.className = 'letter-card-token';
-      tokenStrip.appendChild(pip);
-      tokens.push(pip);
-    }
-    state.letterCards.set(letter, { card, tokens, total: count });
+  let countBadge = null;
+  if (present) {
+    countBadge = document.createElement('span');
+    countBadge.className = 'letter-card-count';
+    countBadge.textContent = String(count);
+    countBadge.setAttribute('aria-hidden', 'true');
+    card.appendChild(countBadge);
+    state.letterCards.set(letter, { card, countEl: countBadge, total: count });
     card.setAttribute('aria-label', `${letter} letters available ${count}`);
   } else {
     card.classList.add('letter-card-absent');
@@ -895,9 +890,9 @@ function updateLetterArrayUsage(state) {
     );
     const remaining = Math.max(total - used, 0);
 
-    info.tokens.forEach((pip, idx) => {
-      pip.classList.toggle('used', idx < used);
-    });
+    if (info.countEl) {
+      info.countEl.textContent = String(remaining);
+    }
 
     info.card.classList.toggle('depleted', remaining === 0);
     info.card.classList.toggle('partial', remaining > 0 && remaining < total);
