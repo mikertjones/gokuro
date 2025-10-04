@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "gokuro-api",
     "version":  "1.0.0",
     "dependencies":  {
@@ -11,4 +11,3 @@
                     "dev":  "node server.js"
                 }
 }
-
