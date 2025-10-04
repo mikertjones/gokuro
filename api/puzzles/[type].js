@@ -1,8 +1,20 @@
 ﻿const { Pool } = require('pg');
 
+const ALLOWED_ORIGINS = new Set([
+  'https://gokuro.net',
+  'https://www.gokuro.net',
+  'https://gokuro.github.io',
+]);
+
 const pool = new Pool(resolveConnectionConfig());
 
 async function handler(req, res) {
+  addCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
   if (req.method && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -38,6 +50,18 @@ async function handler(req, res) {
 
 module.exports = handler;
 module.exports.pool = pool;
+
+function addCorsHeaders(req, res) {
+  const origin = req.headers?.origin || '';
+  const normalizedOrigin = typeof origin === 'string' ? origin.toLowerCase() : '';
+
+  if (normalizedOrigin && ALLOWED_ORIGINS.has(normalizedOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  }
+}
 
 function resolveConnectionConfig() {
   if (process.env.DATABASE_URL) {
