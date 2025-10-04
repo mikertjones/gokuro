@@ -7,9 +7,29 @@ const vowelSet = new Set(['A', 'E', 'I', 'O', 'U']);
 const BASE_CELL_SIZE = 56;
 
 
-const API_BASE = '/api/puzzles';
+const LOCAL_API_BASE = '/api/puzzles';
+const REMOTE_API_BASE = 'https://gokuro.vercel.app/api/puzzles';
 const WEEK_PATH = '/week';
 const VALID_PUZZLE_KEYS = ['5x5', '5x6', '6x7', '7x7'];
+
+function resolveApiBase() {
+  if (typeof window === 'undefined' || !window.location) {
+    return LOCAL_API_BASE;
+  }
+
+  const host = window.location.hostname ? window.location.hostname.toLowerCase() : '';
+  if (!host) {
+    return LOCAL_API_BASE;
+  }
+
+  if (host === 'gokuro.net' || host === 'www.gokuro.net' || host.endsWith('gokuro.github.io')) {
+    return REMOTE_API_BASE;
+  }
+
+  return LOCAL_API_BASE;
+}
+
+const API_BASE = resolveApiBase();
 
 let weeklyEntries = [];
 let activeDayIndex = 0;
