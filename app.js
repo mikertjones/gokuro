@@ -638,6 +638,8 @@ function prepareState(raw) {
     consonantEntries: Array.from(consonantCounts.entries()).sort((a, b) => a[0].localeCompare(b[0])),
     letterTokens: new Map(),
     letterCards: new Map(),
+    activeInput: null,
+    lastActiveInput: null,
     inputs: [],
     rowDisplays: [],
     colDisplays: [],
@@ -687,6 +689,7 @@ function renderGrid(state) {
           state.inputs.push(input);
           state.rowCellGroups[r].push(cell);
           state.colCellGroups[c].push(cell);
+          cell.addEventListener('click', (event) => handleGridCellClick(event, state));
         }
       } else if (r < state.rowCount && c === state.colCount) {
         cell.classList.add('total');
@@ -866,6 +869,12 @@ function createLetterCard(entry, state, type) {
     countBadge.textContent = String(count);
     countBadge.setAttribute('aria-hidden', 'true');
     card.appendChild(countBadge);
+    card.dataset.remaining = String(Math.max(count, 0));
+    card.classList.add('letter-card-interactive');
+    if (count <= 0) {
+      card.classList.add('letter-card-disabled');
+    }
+    card.addEventListener('click', (event) => handleLetterCardSelection(event, state, letter));
     state.letterCards.set(letter, { card, countEl: countBadge, total: count });
     card.setAttribute('aria-label', `${letter} letters available ${count}`);
   } else {
@@ -894,6 +903,9 @@ function updateLetterArrayUsage(state) {
       info.countEl.textContent = String(remaining);
     }
 
+    info.total = total;
+    info.card.dataset.remaining = String(remaining);
+    info.card.classList.toggle('letter-card-disabled', remaining === 0);
     info.card.classList.toggle('depleted', remaining === 0);
     info.card.classList.toggle('partial', remaining > 0 && remaining < total);
     info.card.setAttribute(
@@ -958,8 +970,107 @@ function ensureTokenBucket(state, letter) {
 function attachInputHandlers(state) {
   state.inputs.forEach((input) => {
     input.value = '';
+    input.addEventListener('focus', () => {
+      state.activeInput = input;
+      state.lastActiveInput = input;
+    });
+    input.addEventListener('blur', () => {
+      if (state.activeInput === input) {
+        state.activeInput = null;
+      }
+    });
     input.addEventListener('input', (event) => handleInput(event, state));
   });
+}
+
+function handleGridCellClick(event, state) {
+  if (!state) {
+    return;
+  }
+  const cell = event.currentTarget;
+  if (!cell || !(cell instanceof HTMLElement)) {
+    return;
+  }
+  const input = cell.querySelector('input');
+  if (!input) {
+    return;
+  }
+  const hadValue = Boolean(input.value);
+  if (hadValue) {
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  if (typeof input.focus === 'function') {
+    try {
+      input.focus({ preventScroll: true });
+    } catch (error) {
+      input.focus();
+    }
+  }
+  if (typeof input.select === 'function') {
+    try {
+      input.select();
+    } catch (error) {
+      // no-op if selection fails
+    }
+  }
+}
+
+function resolveActiveInput(state) {
+  if (!state || !Array.isArray(state.inputs)) {
+    return null;
+  }
+  const activeEl = document.activeElement;
+  if (activeEl && state.inputs.includes(activeEl)) {
+    return activeEl;
+  }
+  if (state.activeInput && state.inputs.includes(state.activeInput)) {
+    return state.activeInput;
+  }
+  if (state.lastActiveInput && state.inputs.includes(state.lastActiveInput)) {
+    return state.lastActiveInput;
+  }
+  return null;
+}
+
+function handleLetterCardSelection(event, state, letter) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  if (!state || !letter) {
+    return;
+  }
+  const targetInput = resolveActiveInput(state);
+  if (!targetInput) {
+    return;
+  }
+  const currentValue = sanitizeInput(targetInput.value || '');
+  const cardInfo = state.letterCards.get(letter);
+  const remainingAttr = cardInfo && cardInfo.card ? cardInfo.card.dataset.remaining : null;
+  const remaining = remainingAttr ? Number.parseInt(remainingAttr, 10) : Number.NaN;
+  const safeRemaining = Number.isNaN(remaining) ? 0 : remaining;
+  if (safeRemaining <= 0 && currentValue !== letter) {
+    return;
+  }
+  if (currentValue !== letter) {
+    targetInput.value = letter;
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  if (typeof targetInput.focus === 'function') {
+    try {
+      targetInput.focus({ preventScroll: true });
+    } catch (error) {
+      targetInput.focus();
+    }
+  }
+  if (typeof targetInput.select === 'function') {
+    try {
+      targetInput.select();
+    } catch (error) {
+      // no-op if selection fails
+    }
+  }
 }
 
 function handleInput(event, state) {

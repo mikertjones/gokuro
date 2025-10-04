@@ -437,7 +437,7 @@ h1 {
 }
 
 .letter-card-count {
-  margin-top: 0px;
+  margin-top: 10px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -451,6 +451,21 @@ h1 {
   line-height: 1;
   letter-spacing: 0;
   transition: background 0.2s ease, color 0.2s ease;
+}
+
+.letter-card-interactive {
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s ease;
+}
+
+.letter-card-interactive:active {
+  transform: translateY(1px);
+}
+
+.letter-card-disabled {
+  cursor: default;
+  pointer-events: none;
 }
 
 .letter-card.depleted .letter-card-count {
