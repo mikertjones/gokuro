@@ -170,7 +170,38 @@ h1 {
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
 }
+
+.grid-toggle::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #ffffff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+}
+
+.grid-toggle.status-complete::after {
+  content: "\2714";
+  display: inline-flex;
+}
+
+.grid-toggle.status-paused::after {
+  content: "\25B6";
+  display: inline-flex;
+  background: #8b5cf6;
+}
+
 
 .grid-toggle.active {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
@@ -277,16 +308,20 @@ h1 {
 }
 
 
-/* Timer Section - Properly Centered */
+/* Timer Section */
 .timer-section {
-    text-align: center;
+    display: flex;
+    justify-content: center;
     margin: 0;
-    padding: 0px;
+    padding: 0;
     width: 100%;
 }
 
 .timer-display {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     font-size: 1.1em;
     color: #374151;
 }
@@ -296,7 +331,48 @@ h1 {
     color: #2563eb;
     font-size: 1.5em;
     font-weight: bold;
-    margin-right: 15px;
+}
+
+.timer-pause-button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #2563eb;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #2563eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.18);
+}
+
+.timer-pause-button::before {
+    content: '\23F8';
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+.timer-pause-button.is-paused::before {
+    content: '\25B6';
+    margin-left: 2px;
+}
+
+.timer-pause-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+    box-shadow: none;
+}
+
+.timer-pause-button:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 16px rgba(37, 99, 235, 0.24);
+}
+
+.timer-pause-button:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.4);
+    outline-offset: 2px;
 }
 
 #completion-message {

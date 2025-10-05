@@ -402,6 +402,7 @@ function getTimeValue(dateString) {
 async function performApplyDayEntry(index, { maintainSelection = false } = {}) {
   const entry = weeklyEntries[index];
   if (!entry) {
+    activePuzzleDate = null;
     return;
   }
 
@@ -417,6 +418,7 @@ async function performApplyDayEntry(index, { maintainSelection = false } = {}) {
   }
 
   activeDayIndex = index;
+  const nextPuzzleDate = normalizeDateString(entry.puzzleDate);
   const puzzleMap = entry.puzzleMap || {};
   const availableKeys = getAvailablePuzzleKeys(puzzleMap); 
   const preferredKey =
@@ -424,10 +426,10 @@ async function performApplyDayEntry(index, { maintainSelection = false } = {}) {
 
   setPuzzlesMap(puzzleMap);
   updateDayNavigationUI(entry);
-  await refreshStatusesForDay(entry.puzzleDate);
+  await refreshStatusesForDay(nextPuzzleDate);
 
   if (preferredKey) {
-    await setActivePuzzle(preferredKey, { force: true });
+    await setActivePuzzle(preferredKey, { force: true, targetDate: nextPuzzleDate });
   } else {
     activeKey = null;
     activeState = null;
@@ -435,6 +437,8 @@ async function performApplyDayEntry(index, { maintainSelection = false } = {}) {
     renderButtons();
     clearGridOutputs();
   }
+
+  activePuzzleDate = nextPuzzleDate;
 }
 
 function applyDayEntry(index, options = {}) {
@@ -555,6 +559,7 @@ const pauseButton = document.getElementById('timer-pause-btn');
 let activeKey = null;
 let activeState = null;
 let lastFocusedElement = null;
+let activePuzzleDate = null;
 let timerIntervalId = null;
 let timerStartTimestamp = 0;
 let timerAccumulatedSeconds = 0;
@@ -589,6 +594,10 @@ function init() {
   window.addEventListener('resize', handleResize);
   setupHowToPlayModal();
 
+  if (pauseButton) {
+    pauseButton.addEventListener('click', handlePauseButtonClick);
+  }
+
   ensurePuzzlesLoaded();
 
   if (!activeKey) {
@@ -610,9 +619,11 @@ function init() {
     updateDayNavigationUI(null);
     refreshButtonStatusesForActiveDay();
   }
+
+  updateTimerControls();
 }
 
-async function performSetActivePuzzle(key, { force = false, reset = false } = {}) {
+async function performSetActivePuzzle(key, { force = false, reset = false, targetDate = null } = {}) {
   if (!force && key === activeKey) {
     return;
   }
@@ -650,7 +661,8 @@ async function performSetActivePuzzle(key, { force = false, reset = false } = {}
   renderLetterArray(activeState);
   attachInputHandlers(activeState);
 
-  const activeDate = getActivePuzzleDate();
+  let activeDate = targetDate ? normalizeDateString(targetDate) : getActivePuzzleDate();
+  activePuzzleDate = normalizeDateString(activeDate);
   if (reset) {
     const storageKey = composePuzzleStorageKey(activeDate, key);
     await deletePuzzleProgressRecord(storageKey);
@@ -667,11 +679,13 @@ async function performSetActivePuzzle(key, { force = false, reset = false } = {}
   updateTotals(activeState);
   updateLetterArrayUsage(activeState);
   handleResize();
+  updateTimerControls();
 }
 
 function setActivePuzzle(key, options = {}) {
+  const params = Object.assign({ targetDate: getActivePuzzleDate() }, options || {});
   puzzleSwitchChain = puzzleSwitchChain
-    .then(() => performSetActivePuzzle(key, options))
+    .then(() => performSetActivePuzzle(key, params))
     .catch((error) => {
       console.error('Failed to switch puzzle', error);
     });
@@ -700,6 +714,9 @@ function renderButtons() {
 }
 
 function getActivePuzzleDate() {
+  if (activePuzzleDate) {
+    return activePuzzleDate;
+  }
   const entry = weeklyEntries[activeDayIndex];
   const direct = entry?.puzzleDate || (dayLabel ? dayLabel.dataset.activeDate : null);
   return normalizeDateString(direct);
@@ -945,8 +962,17 @@ async function persistActivePuzzle({ statusOverride, targetKey } = {}) {
   const hasProgress = hasEntries || elapsedSeconds > 0;
 
   let status = statusOverride;
+  if (status === 'paused' && !hasProgress) {
+    status = 'not-started';
+  }
   if (!status) {
-    status = puzzleCompleted ? 'complete' : hasProgress ? 'started' : 'not-started';
+    if (puzzleCompleted) {
+      status = 'complete';
+    } else if (!timerIntervalId && (timerPaused || hasProgress)) {
+      status = hasProgress ? 'paused' : 'not-started';
+    } else {
+      status = hasProgress ? 'started' : 'not-started';
+    }
   }
 
   if (status === 'not-started') {
@@ -1865,9 +1891,11 @@ function checkForCompletion(state) {
   if (isPuzzleSolved(state)) {
     puzzleCompleted = true;
     stopTimer();
+    timerPaused = false;
     if (completionMessage) {
       completionMessage.style.display = 'inline';
     }
+    updateTimerControls();
     scheduleSaveActivePuzzle({ statusOverride: 'complete' });
   }
 }
