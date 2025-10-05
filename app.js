@@ -399,29 +399,51 @@ function getTimeValue(dateString) {
   return Number.NEGATIVE_INFINITY;
 }
 
-function applyDayEntry(index, { maintainSelection = false } = {}) {
+async function performApplyDayEntry(index, { maintainSelection = false } = {}) {
   const entry = weeklyEntries[index];
   if (!entry) {
     return;
   }
 
+  pauseActiveTimer({ silent: true });
+
+  try {
+    await persistActivePuzzle({
+      statusOverride: puzzleCompleted ? 'complete' : 'paused',
+      targetKey: getActivePuzzleStorageKey(),
+    });
+  } catch (error) {
+    console.error('Failed to persist progress before day switch', error);
+  }
+
   activeDayIndex = index;
   const puzzleMap = entry.puzzleMap || {};
-  const availableKeys = getAvailablePuzzleKeys(puzzleMap);
+  const availableKeys = getAvailablePuzzleKeys(puzzleMap); 
   const preferredKey =
     maintainSelection && activeKey && puzzleMap[activeKey] ? activeKey : availableKeys[0] || null;
 
   setPuzzlesMap(puzzleMap);
   updateDayNavigationUI(entry);
+  await refreshStatusesForDay(entry.puzzleDate);
 
   if (preferredKey) {
-    setActivePuzzle(preferredKey, { force: true });
+    await setActivePuzzle(preferredKey, { force: true });
   } else {
     activeKey = null;
     activeState = null;
+    resetTimerState();
     renderButtons();
     clearGridOutputs();
   }
+}
+
+function applyDayEntry(index, options = {}) {
+  daySwitchChain = daySwitchChain
+    .then(() => performApplyDayEntry(index, options))
+    .catch((error) => {
+      console.error('Failed to switch day', error);
+    });
+  return daySwitchChain;
 }
 
 function getAvailablePuzzleKeys(target = puzzles) {
@@ -528,13 +550,24 @@ const completionMessage = document.getElementById('completion-message');
 const dayLabel = document.getElementById('active-day-label');
 const prevDayButton = document.getElementById('prev-day-btn');
 const nextDayButton = document.getElementById('next-day-btn');
+const pauseButton = document.getElementById('timer-pause-btn');
 
 let activeKey = null;
 let activeState = null;
 let lastFocusedElement = null;
 let timerIntervalId = null;
 let timerStartTimestamp = 0;
+let timerAccumulatedSeconds = 0;
+let timerPaused = false;
 let puzzleCompleted = false;
+let isRestoringProgress = false;
+let pendingSaveTimeoutId = 0;
+let pendingSaveOptions = null;
+const puzzleStatusCache = new Map();
+let progressStore = null;
+let progressDbPromise = null;
+let puzzleSwitchChain = Promise.resolve();
+let daySwitchChain = Promise.resolve();
 
 function init() {
   toggleButtons.forEach((button) => {
@@ -547,7 +580,7 @@ function init() {
   if (resetButton) {
     resetButton.addEventListener('click', () => {
       if (activeKey) {
-        setActivePuzzle(activeKey, { force: true });
+        setActivePuzzle(activeKey, { force: true, reset: true });
       }
     });
   }
@@ -570,23 +603,42 @@ function init() {
   }
 
   if (weeklyEntries.length > 0) {
-    updateDayNavigationUI(weeklyEntries[activeDayIndex]);
+    const currentEntry = weeklyEntries[activeDayIndex];
+    updateDayNavigationUI(currentEntry);
+    refreshStatusesForDay(currentEntry?.puzzleDate);
   } else {
     updateDayNavigationUI(null);
+    refreshButtonStatusesForActiveDay();
   }
 }
 
-function setActivePuzzle(key, { force = false } = {}) {
+async function performSetActivePuzzle(key, { force = false, reset = false } = {}) {
   if (!force && key === activeKey) {
     return;
   }
 
+  pauseActiveTimer({ silent: true });
+
+  const previousKey = activeKey;
+  const previousDate = getActivePuzzleDate();
+  if (previousKey && !(reset && previousKey === key)) {
+    try {
+      await persistActivePuzzle({
+        statusOverride: puzzleCompleted ? 'complete' : 'paused',
+        targetKey: composePuzzleStorageKey(previousDate, previousKey),
+      });
+    } catch (error) {
+      console.error('Failed to save puzzle progress', error);
+    }
+  }
+
+  resetTimerState();
   ensurePuzzlesLoaded();
+
   const definition = puzzles[key];
   if (!definition) {
     return;
   }
-  resetTimerState();
 
   activeKey = key;
   activeState = prepareState(definition.data);
@@ -597,8 +649,33 @@ function setActivePuzzle(key, { force = false } = {}) {
   renderLetterTable(activeState);
   renderLetterArray(activeState);
   attachInputHandlers(activeState);
+
+  const activeDate = getActivePuzzleDate();
+  if (reset) {
+    const storageKey = composePuzzleStorageKey(activeDate, key);
+    await deletePuzzleProgressRecord(storageKey);
+    setPuzzleStatusCacheEntry(storageKey, null);
+    refreshButtonStatusesForActiveDay();
+  } else {
+    try {
+      await restoreActivePuzzleProgress(activeDate, key);
+    } catch (error) {
+      console.error('Failed to restore puzzle progress', error);
+    }
+  }
+
   updateTotals(activeState);
+  updateLetterArrayUsage(activeState);
   handleResize();
+}
+
+function setActivePuzzle(key, options = {}) {
+  puzzleSwitchChain = puzzleSwitchChain
+    .then(() => performSetActivePuzzle(key, options))
+    .catch((error) => {
+      console.error('Failed to switch puzzle', error);
+    });
+  return puzzleSwitchChain;
 }
 
 function renderButtons() {
@@ -619,7 +696,376 @@ function renderButtons() {
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', String(isActive));
   });
+  refreshButtonStatusesForActiveDay();
 }
+
+function getActivePuzzleDate() {
+  const entry = weeklyEntries[activeDayIndex];
+  const direct = entry?.puzzleDate || (dayLabel ? dayLabel.dataset.activeDate : null);
+  return normalizeDateString(direct);
+}
+
+function getActivePuzzleStorageKey() {
+  const date = getActivePuzzleDate();
+  if (!date || !activeKey) {
+    return null;
+  }
+  return composePuzzleStorageKey(date, activeKey);
+}
+
+function composePuzzleStorageKey(date, puzzleKey) {
+  const normalizedDate = normalizeDateString(date) || 'unknown';
+  const suffix = puzzleKey || 'unknown';
+  return `${normalizedDate}-${suffix}`;
+}
+
+function getCurrentElapsedSeconds() {
+  const runningSeconds = timerStartTimestamp
+    ? Math.max(0, Math.floor((Date.now() - timerStartTimestamp) / 1000))
+    : 0;
+  return timerAccumulatedSeconds + runningSeconds;
+}
+
+function setPuzzleStatusCacheEntry(storageKey, payload) {
+  if (!storageKey) {
+    return;
+  }
+  if (!payload || payload.status === 'not-started') {
+    puzzleStatusCache.delete(storageKey);
+  } else {
+    puzzleStatusCache.set(storageKey, {
+      status: payload.status,
+      elapsedSeconds: Math.max(0, Number(payload.elapsedSeconds) || 0),
+    });
+  }
+}
+
+function refreshButtonStatusesForActiveDay() {
+  const date = getActivePuzzleDate();
+  toggleButtons.forEach((btn) => {
+    btn.classList.remove('status-complete', 'status-paused');
+    btn.removeAttribute('data-status');
+    if (!date) {
+      return;
+    }
+    const puzzleKey = btn.dataset.puzzle || '';
+    const storageKey = composePuzzleStorageKey(date, puzzleKey);
+    const record = puzzleStatusCache.get(storageKey);
+    const status = record?.status || 'not-started';
+    const isActive = puzzleKey === activeKey;
+
+    if (status === 'complete') {
+      btn.classList.add('status-complete');
+      btn.setAttribute('data-status', 'complete');
+    } else if (status === 'paused' && !isActive) {
+      btn.classList.add('status-paused');
+      btn.setAttribute('data-status', 'paused');
+    }
+  });
+}
+
+const STORAGE_DB_NAME = 'gokuro-progress';
+const STORAGE_STORE_NAME = 'puzzleProgress';
+
+async function ensureProgressStore() {
+  if (progressStore) {
+    return progressStore;
+  }
+
+  const memoryCache = new Map();
+  const hasIndexedDb = typeof indexedDB !== 'undefined';
+
+  if (!hasIndexedDb) {
+    progressStore = {
+      async get(key) {
+        return memoryCache.get(key) || null;
+      },
+      async set(record) {
+        if (!record || !record.id) {
+          return;
+        }
+        memoryCache.set(record.id, record);
+      },
+      async delete(key) {
+        memoryCache.delete(key);
+      },
+    };
+    return progressStore;
+  }
+
+  if (!progressDbPromise) {
+    progressDbPromise = new Promise((resolve) => {
+      try {
+        const request = indexedDB.open(STORAGE_DB_NAME, 1);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORAGE_STORE_NAME)) {
+            db.createObjectStore(STORAGE_STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => {
+          console.error('Failed to open progress database', request.error);
+          resolve(null);
+        };
+      } catch (error) {
+        console.error('IndexedDB unavailable', error);
+        resolve(null);
+      }
+    });
+  }
+
+  const db = await progressDbPromise;
+  if (!db) {
+    progressStore = {
+      async get(key) {
+        return memoryCache.get(key) || null;
+      },
+      async set(record) {
+        if (!record || !record.id) {
+          return;
+        }
+        memoryCache.set(record.id, record);
+      },
+      async delete(key) {
+        memoryCache.delete(key);
+      },
+    };
+    return progressStore;
+  }
+
+  progressStore = {
+    async get(key) {
+      if (!key) {
+        return null;
+      }
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORAGE_STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORAGE_STORE_NAME);
+        const request = store.get(key);
+        request.onsuccess = () => {
+          resolve(request.result || null);
+        };
+        request.onerror = () => {
+          console.error('Failed to read progress record', request.error);
+          resolve(null);
+        };
+      });
+    },
+    async set(record) {
+      if (!record || !record.id) {
+        return;
+      }
+      await new Promise((resolve) => {
+        const tx = db.transaction(STORAGE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORAGE_STORE_NAME);
+        store.put(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => {
+          console.error('Failed to save progress record', tx.error);
+          resolve();
+        };
+      });
+    },
+    async delete(key) {
+      if (!key) {
+        return;
+      }
+      await new Promise((resolve) => {
+        const tx = db.transaction(STORAGE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORAGE_STORE_NAME);
+        store.delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => {
+          console.error('Failed to delete progress record', tx.error);
+          resolve();
+        };
+      });
+    },
+  };
+
+  return progressStore;
+}
+
+async function getPuzzleProgressRecord(storageKey) {
+  if (!storageKey) {
+    return null;
+  }
+  const store = await ensureProgressStore();
+  return store.get(storageKey);
+}
+
+async function savePuzzleProgressRecord(record) {
+  if (!record || !record.id) {
+    return;
+  }
+  const store = await ensureProgressStore();
+  await store.set(record);
+}
+
+async function deletePuzzleProgressRecord(storageKey) {
+  if (!storageKey) {
+    return;
+  }
+  const store = await ensureProgressStore();
+  await store.delete(storageKey);
+}
+
+function collectPuzzleEntries(state) {
+  if (!state || !Array.isArray(state.rowCellGroups)) {
+    return {};
+  }
+  const entries = {};
+  state.rowCellGroups.forEach((rowCells, rowIndex) => {
+    rowCells.forEach((cell, colIndex) => {
+      const value = getCellValue(cell);
+      if (value) {
+        entries[`${rowIndex}-${colIndex}`] = value;
+      }
+    });
+  });
+  return entries;
+}
+
+async function persistActivePuzzle({ statusOverride, targetKey } = {}) {
+  if (pendingSaveTimeoutId) {
+    clearTimeout(pendingSaveTimeoutId);
+    pendingSaveTimeoutId = 0;
+    pendingSaveOptions = null;
+  }
+
+  const storageKey = targetKey || getActivePuzzleStorageKey();
+  if (!storageKey || !activeState) {
+    return;
+  }
+
+  const entries = collectPuzzleEntries(activeState);
+  const elapsedSeconds = getCurrentElapsedSeconds();
+  const hasEntries = Object.keys(entries).length > 0;
+  const hasProgress = hasEntries || elapsedSeconds > 0;
+
+  let status = statusOverride;
+  if (!status) {
+    status = puzzleCompleted ? 'complete' : hasProgress ? 'started' : 'not-started';
+  }
+
+  if (status === 'not-started') {
+    await deletePuzzleProgressRecord(storageKey);
+    setPuzzleStatusCacheEntry(storageKey, null);
+    refreshButtonStatusesForActiveDay();
+    return;
+  }
+
+  const record = {
+    id: storageKey,
+    status,
+    entries,
+    elapsedSeconds,
+    updatedAt: Date.now(),
+  };
+
+  await savePuzzleProgressRecord(record);
+  setPuzzleStatusCacheEntry(storageKey, { status, elapsedSeconds });
+  refreshButtonStatusesForActiveDay();
+}
+
+async function restoreActivePuzzleProgress(date, puzzleKey) {
+  const storageKey = composePuzzleStorageKey(date, puzzleKey);
+  const record = await getPuzzleProgressRecord(storageKey);
+  if (!record) {
+    timerAccumulatedSeconds = 0;
+    timerStartTimestamp = 0;
+    timerPaused = false;
+    puzzleCompleted = false;
+    updateTimerDisplay();
+    updateTimerControls();
+    if (completionMessage) {
+      completionMessage.style.display = 'none';
+    }
+    setPuzzleStatusCacheEntry(storageKey, null);
+    refreshButtonStatusesForActiveDay();
+    return;
+  }
+
+  timerAccumulatedSeconds = Math.max(0, Number(record.elapsedSeconds) || 0);
+  timerStartTimestamp = 0;
+  timerPaused = record.status === 'paused';
+  puzzleCompleted = record.status === 'complete';
+  updateTimerDisplay();
+  updateTimerControls();
+  if (completionMessage) {
+    completionMessage.style.display = puzzleCompleted ? 'inline' : 'none';
+  }
+
+  const entries = record.entries || {};
+  if (activeState && activeState.inputs) {
+    isRestoringProgress = true;
+    Object.entries(entries).forEach(([coord, value]) => {
+      const [rowIndexStr, colIndexStr] = coord.split('-');
+      const rowIndex = Number(rowIndexStr);
+      const colIndex = Number(colIndexStr);
+      const cell = activeState.rowCellGroups?.[rowIndex]?.[colIndex];
+      if (!cell) {
+        return;
+      }
+      const input = cell.querySelector('input');
+      if (!input) {
+        return;
+      }
+      input.value = value;
+      handleInput({ target: input }, activeState);
+    });
+    isRestoringProgress = false;
+    updateTotals(activeState);
+    updateLetterArrayUsage(activeState);
+  }
+
+  setPuzzleStatusCacheEntry(storageKey, {
+    status: record.status || 'started',
+    elapsedSeconds: timerAccumulatedSeconds,
+  });
+  refreshButtonStatusesForActiveDay();
+}
+
+async function refreshStatusesForDay(date) {
+  const normalizedDate = normalizeDateString(date);
+  if (!normalizedDate) {
+    return;
+  }
+  const store = await ensureProgressStore();
+  const keys = getAvailablePuzzleKeys();
+  await Promise.all(
+    keys.map(async (puzzleKey) => {
+      const storageKey = composePuzzleStorageKey(normalizedDate, puzzleKey);
+      const record = await store.get(storageKey);
+      if (record) {
+        setPuzzleStatusCacheEntry(storageKey, {
+          status: record.status || 'not-started',
+          elapsedSeconds: Math.max(0, Number(record.elapsedSeconds) || 0),
+        });
+      } else {
+        setPuzzleStatusCacheEntry(storageKey, null);
+      }
+    })
+  );
+  refreshButtonStatusesForActiveDay();
+}
+
+function scheduleSaveActivePuzzle(options = {}) {
+  pendingSaveOptions = Object.assign({}, pendingSaveOptions || {}, options);
+  if (pendingSaveTimeoutId) {
+    clearTimeout(pendingSaveTimeoutId);
+  }
+  pendingSaveTimeoutId = window.setTimeout(() => {
+    const opts = pendingSaveOptions || {};
+    pendingSaveOptions = null;
+    pendingSaveTimeoutId = 0;
+    persistActivePuzzle(opts).catch((error) => {
+      console.error('Failed to persist puzzle progress', error);
+    });
+  }, 200);
+}
+
 
 function prepareState(raw) {
   const matrix = raw.matrix.map((row) => row.split(''));
@@ -1161,7 +1607,7 @@ function handleInput(event, state) {
     input.value = cleaned;
   }
 
-  if (cleaned && !timerIntervalId && !puzzleCompleted) {
+  if (cleaned && !timerIntervalId && !puzzleCompleted && !isRestoringProgress) {
     startTimer();
   }
 
@@ -1197,11 +1643,21 @@ function handleInput(event, state) {
     cell.classList.add('filled');
   } else {
     cell.classList.remove('filled');
+    if (prevChar) {
+      puzzleCompleted = false;
+      if (completionMessage) {
+        completionMessage.style.display = 'none';
+      }
+    }
   }
 
   cell.dataset.prevChar = cleaned;
   updateLetterArrayUsage(state);
   checkForCompletion(state);
+
+  if (!isRestoringProgress && !puzzleCompleted) {
+    scheduleSaveActivePuzzle();
+  }
 }
 
 function consumeToken(state, letter) {
@@ -1291,9 +1747,11 @@ function startTimer() {
     return;
   }
 
+  timerPaused = false;
   timerStartTimestamp = Date.now();
   updateTimerDisplay();
   timerIntervalId = window.setInterval(updateTimerDisplay, 1000);
+  updateTimerControls();
 }
 
 function stopTimer() {
@@ -1303,13 +1761,20 @@ function stopTimer() {
   }
 
   if (timerStartTimestamp) {
-    updateTimerDisplay();
+    const delta = Math.max(0, Math.floor((Date.now() - timerStartTimestamp) / 1000));
+    timerAccumulatedSeconds += delta;
+    timerStartTimestamp = 0;
   }
+
+  updateTimerDisplay();
+  updateTimerControls();
 }
 
 function resetTimerState() {
   stopTimer();
   timerStartTimestamp = 0;
+  timerAccumulatedSeconds = 0;
+  timerPaused = false;
   puzzleCompleted = false;
 
   if (timerText) {
@@ -1318,22 +1783,79 @@ function resetTimerState() {
   if (completionMessage) {
     completionMessage.style.display = 'none';
   }
+  updateTimerControls();
 }
 
 function updateTimerDisplay() {
-  if (!timerText || !timerStartTimestamp) {
-    if (timerText && !timerIntervalId) {
-      timerText.textContent = '00:00';
-    }
+  if (!timerText) {
     return;
   }
 
-  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timerStartTimestamp) / 1000));
+  const elapsedSeconds = getCurrentElapsedSeconds();
   const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
   const seconds = String(elapsedSeconds % 60).padStart(2, '0');
   timerText.textContent = `${minutes}:${seconds}`;
 }
 
+function pauseActiveTimer({ silent = false } = {}) {
+  if (timerIntervalId || timerStartTimestamp) {
+    stopTimer();
+  }
+  if (!puzzleCompleted) {
+    timerPaused = true;
+  }
+  if (!silent) {
+    updateTimerControls();
+  }
+}
+
+function updateTimerControls() {
+  if (!pauseButton) {
+    return;
+  }
+
+  if (puzzleCompleted) {
+    pauseButton.disabled = true;
+    pauseButton.classList.remove('is-paused', 'is-running');
+    pauseButton.setAttribute('aria-label', 'Puzzle complete');
+    return;
+  }
+
+  pauseButton.disabled = false;
+  const running = Boolean(timerIntervalId);
+  if (running) {
+    pauseButton.classList.add('is-running');
+    pauseButton.classList.remove('is-paused');
+    pauseButton.setAttribute('aria-label', 'Pause timer');
+  } else {
+    pauseButton.classList.remove('is-running');
+    pauseButton.classList.add('is-paused');
+    pauseButton.setAttribute('aria-label', getCurrentElapsedSeconds() > 0 ? 'Resume timer' : 'Pause timer');
+  }
+}
+
+function handlePauseButtonClick() {
+  if (puzzleCompleted) {
+    return;
+  }
+
+  if (timerIntervalId) {
+    pauseActiveTimer();
+    scheduleSaveActivePuzzle({ statusOverride: 'paused' });
+    return;
+  }
+
+  const elapsed = getCurrentElapsedSeconds();
+  if (timerPaused && elapsed > 0) {
+    startTimer();
+    scheduleSaveActivePuzzle();
+    return;
+  }
+
+  timerPaused = true;
+  updateTimerControls();
+  scheduleSaveActivePuzzle({ statusOverride: 'paused' });
+}
 
 function checkForCompletion(state) {
   if (puzzleCompleted) {
@@ -1346,6 +1868,7 @@ function checkForCompletion(state) {
     if (completionMessage) {
       completionMessage.style.display = 'inline';
     }
+    scheduleSaveActivePuzzle({ statusOverride: 'complete' });
   }
 }
 
