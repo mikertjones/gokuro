@@ -4,6 +4,43 @@ const letterValues = Object.fromEntries(
 
 const vowelSet = new Set(['A', 'E', 'I', 'O', 'U']);
 
+function shouldSuppressVirtualKeyboard() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const nav = window.navigator || null;
+  if (nav && nav.userAgentData && typeof nav.userAgentData.mobile === 'boolean' && nav.userAgentData.mobile) {
+    return true;
+  }
+  if (typeof window.matchMedia === 'function') {
+    try {
+      const coarseQuery = window.matchMedia('(pointer: coarse)');
+      if (coarseQuery && coarseQuery.matches) {
+        return true;
+      }
+    } catch (error) {
+      // ignore matchMedia errors
+    }
+  }
+  if (nav) {
+    if (typeof nav.maxTouchPoints === 'number' && nav.maxTouchPoints > 0) {
+      return true;
+    }
+    if (typeof nav.msMaxTouchPoints === 'number' && nav.msMaxTouchPoints > 0) {
+      return true;
+    }
+  }
+  if (typeof window.ontouchstart !== 'undefined') {
+    return true;
+  }
+  if (typeof document !== 'undefined') {
+    return 'ontouchstart' in document.documentElement;
+  }
+  return false;
+}
+
+const suppressVirtualKeyboard = shouldSuppressVirtualKeyboard();
+
 const BASE_CELL_SIZE = 56;
 
 
@@ -682,8 +719,12 @@ function renderGrid(state) {
           input.type = 'text';
           input.maxLength = 1;
           input.autocomplete = 'off';
-          input.inputMode = 'text';
+          input.inputMode = suppressVirtualKeyboard ? 'none' : 'text';
           input.spellcheck = false;
+          if (suppressVirtualKeyboard) {
+            input.readOnly = true;
+            input.dataset.virtualKeyboard = 'suppressed';
+          }
           input.setAttribute('aria-label', `Row ${r + 1} column ${c + 1}`);
           cell.appendChild(input);
           state.inputs.push(input);
@@ -979,6 +1020,9 @@ function attachInputHandlers(state) {
         state.activeInput = null;
       }
     });
+    if (input.readOnly) {
+      input.addEventListener('keydown', (event) => handleSuppressedInputKeydown(event, state));
+    }
     input.addEventListener('input', (event) => handleInput(event, state));
   });
 }
@@ -1031,6 +1075,38 @@ function resolveActiveInput(state) {
     return state.lastActiveInput;
   }
   return null;
+}
+
+function handleSuppressedInputKeydown(event, state) {
+  if (!state) {
+    return;
+  }
+  const input = event.currentTarget;
+  if (!input || input.readOnly !== true) {
+    return;
+  }
+  const key = event.key || '';
+  if (key === 'Tab' || key.startsWith('Arrow') || key === 'Shift' || key === 'Meta' || key === 'Control' || key === 'Alt') {
+    return;
+  }
+  if (key === 'Backspace' || key === 'Delete') {
+    if (input.value) {
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    event.preventDefault();
+    return;
+  }
+  if (key.length !== 1) {
+    return;
+  }
+  const cleaned = sanitizeInput(key);
+  if (!cleaned) {
+    return;
+  }
+  input.value = cleaned;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  event.preventDefault();
 }
 
 function handleLetterCardSelection(event, state, letter) {

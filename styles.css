@@ -422,7 +422,7 @@ h1 {
 }
 
 .letter-card-letter {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   line-height: 1;
   margin-top: 6px;
 }
@@ -431,19 +431,19 @@ h1 {
   position: absolute;
   top: 8px;
   right: 12px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #1e3a8a;
 }
 
 .letter-card-count {
-  margin-top: 10px;
-  width: 36px;
-  height: 36px;
+  margin-top: 0px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: #ef4444;
   color: #ffffff;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 700;
   display: flex;
   align-items: center;
