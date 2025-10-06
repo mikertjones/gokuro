@@ -755,6 +755,13 @@ h1 {
   margin-top: 12px;
 }
 
+.install-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
 .reset-button {
   appearance: none;
   border: 2px solid #1d4ed8;
