@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gokuro</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#2563eb" />
 </head>
 <body>
   <img src="images/gokuro-logo.jpg" alt="Gokuro word puzzle logo" class="brand-logo" />
@@ -63,6 +65,9 @@
   <div class="reset-wrapper">
     <button type="button" id="reset-btn" class="reset-button">Reset Puzzle</button>
   </div>
+  <div class="info-button-row">
+    <button type="button" id="install-btn" class="install-button hidden" aria-hidden="true">Install App</button>
+  </div>
 
 
   <div id="how-to-play-modal" class="modal" aria-hidden="true">
@@ -91,4 +96,5 @@
   <script src="app.js" defer></script>
 </body>
 </html>
+
 

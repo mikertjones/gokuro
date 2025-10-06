@@ -41,6 +41,32 @@ function shouldSuppressVirtualKeyboard() {
 
 const suppressVirtualKeyboard = shouldSuppressVirtualKeyboard();
 
+function isLikelyMobileDevice() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const nav = window.navigator || (typeof navigator !== 'undefined' ? navigator : null);
+  if (!nav) {
+    return false;
+  }
+  if (suppressVirtualKeyboard) {
+    return true;
+  }
+  const userAgent = String(nav.userAgent || nav.vendor || '').toLowerCase();
+  return /android|iphone|ipad|ipod|mobile/.test(userAgent);
+}
+
+function isAppInstalled() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const standaloneMatch =
+    typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
+  const nav = window.navigator || null;
+  const iosStandalone = nav && typeof nav.standalone !== 'undefined' ? Boolean(nav.standalone) : false;
+  return Boolean(standaloneMatch || iosStandalone);
+}
+
 const BASE_CELL_SIZE = 56;
 
 
@@ -548,6 +574,7 @@ const letterArrayEl = document.getElementById('letter-array');
 const toggleButtons = Array.from(document.querySelectorAll('.grid-toggle'));
 const resetButton = document.getElementById('reset-btn');
 const howToPlayButton = document.getElementById('how-to-play-btn');
+const installButton = document.getElementById('install-btn');
 const howToPlayModal = document.getElementById('how-to-play-modal');
 const timerText = document.getElementById('timer-text');
 const completionMessage = document.getElementById('completion-message');
@@ -568,11 +595,85 @@ let puzzleCompleted = false;
 let isRestoringProgress = false;
 let pendingSaveTimeoutId = 0;
 let pendingSaveOptions = null;
+let deferredInstallPrompt = null;
 const puzzleStatusCache = new Map();
 let progressStore = null;
 let progressDbPromise = null;
 let puzzleSwitchChain = Promise.resolve();
 let daySwitchChain = Promise.resolve();
+
+setupInstallPrompt();
+
+function setupInstallPrompt() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  hideInstallButton();
+
+  if (installButton) {
+    installButton.addEventListener('click', handleInstallButtonClick);
+  }
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (installButton && !isAppInstalled() && isLikelyMobileDevice()) {
+      showInstallButton();
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    hideInstallButton();
+  });
+
+  if (isAppInstalled()) {
+    deferredInstallPrompt = null;
+    hideInstallButton();
+  }
+}
+
+function showInstallButton() {
+  if (!installButton) {
+    return;
+  }
+  installButton.classList.remove('hidden');
+  installButton.disabled = false;
+  installButton.setAttribute('aria-hidden', 'false');
+}
+
+function hideInstallButton() {
+  if (!installButton) {
+    return;
+  }
+  installButton.classList.add('hidden');
+  installButton.disabled = true;
+  installButton.setAttribute('aria-hidden', 'true');
+}
+
+async function handleInstallButtonClick(event) {
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
+  if (!deferredInstallPrompt) {
+    hideInstallButton();
+    return;
+  }
+  const promptEvent = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  hideInstallButton();
+
+  try {
+    if (typeof promptEvent.prompt === 'function') {
+      promptEvent.prompt();
+    }
+    if (promptEvent.userChoice && typeof promptEvent.userChoice.then === 'function') {
+      await promptEvent.userChoice;
+    }
+  } catch (error) {
+    console.error('Failed to show install prompt', error);
+  }
+}
 
 function init() {
   toggleButtons.forEach((button) => {
@@ -1985,3 +2086,10 @@ function incrementMap(map, key) {
 }
 
 bootstrap();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch((error) => {
+    console.error('Service worker registration failed', error);
+  });
+}
+

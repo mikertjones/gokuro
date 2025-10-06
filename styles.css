@@ -45,6 +45,10 @@ body.modal-open {
   overflow: hidden;
 }
 
+.hidden {
+  display: none !important;
+}
+
 
 h1 {
   margin: 0;
@@ -118,6 +122,9 @@ h1 {
   margin-top: 0px;
   display: flex;
   justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .how-to-button,
@@ -155,6 +162,42 @@ h1 {
 .modal-action {
   display: flex;
   margin: 24px auto 0;
+}
+
+.install-button {
+  appearance: none;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.install-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.28);
+  background: #1d4ed8;
+}
+
+.install-button:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 3px;
+}
+
+.install-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .grid-toggle {
@@ -814,6 +857,7 @@ h1 {
     margin-top: 0px;
   }
   .how-to-button,
+  .install-button,
   .modal-action {
     width: 100%;
     max-width: 320px;
@@ -898,6 +942,7 @@ h1 {
     font-size: 0.7rem;
   }
   .how-to-button,
+  .install-button,
   .modal-action {
     width: 100%;
     max-width: none;
@@ -934,3 +979,4 @@ h1 {
     font-size: 0.9rem;
   }
 }
+
