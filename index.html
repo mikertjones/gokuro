@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gokuro</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="modal-styles.css" />
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="/images/icons/favicon-16x16.png">
   <meta name="theme-color" content="#2563eb" />
 </head>
 <body>
@@ -72,21 +74,167 @@
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="how-to-play-heading">
       <button type="button" class="modal-close" aria-label="Close dialog" data-close-modal>&times;</button>
-      <h2 id="how-to-play-heading">Gokuro</h2>
-      <p class="modal-subheading">How to play</p>
-      <ul class="modal-list">
-        <li>Gokuro puzzle is a word grid</li>
-        <li>There are no repeated words</li>
-        <li>The sum of letter values in each word is shown to the right and below</li>
-        <li>A '*' in a square indicates a vowel</li>
-        <li>A '!' after a word total indicates that at least one letter is used more than once in the word - not neccessarily as a double</li>
-        <li>The letter tray below the grid shows how many of each letter appears in the grid and their values</li>
-      </ul>
-      <h3 class="modal-tips-heading">Tips</h3>
-      <ul class="modal-list">
-        <li>start with the lowest word total</li>
-        <li>test with vowels to see what total remains to be found</li>
-      </ul>
+
+      <div class="modal-content">
+          <h1>How to Play Gokuro</h1>
+          
+          <p>Gokuro is a word puzzle where you find horizontal and vertical interlocking words.</p>
+
+          <h2>Play Selection</h2>
+          <p>There are 4 new puzzles released daily, and you can play any of the 28 puzzles from the current week.</p>
+
+          <h3>Levels</h3>
+          <p>Each day there are 4 new puzzles of increasing difficulty. They are based on grid sizes 5x5, 5x6, 6x7 and 7x7.</p>
+          <p>Choose which grid you want to play with the 4 selectors.</p>
+          
+          <div class="image-container">
+              <img src="images/grid-selectors.jpg" alt="Grid selectors showing 5x5, 5x6, 6x7, and 7x7 options">
+          </div>
+
+          <h3>Days</h3>
+          <p>You can step backwards / forwards and play any puzzle from the previous 6 days (total of 7 days available).</p>
+          
+          <div class="image-container">
+              <img src="images/day-selectors.jpg" alt="Day navigation controls">
+          </div>
+
+          <h2>The Puzzle Grid</h2>
+          <p>Letters are entered in the white cells with a click or a tap on a letter in the letter tray below.</p>
+
+          <h3>Vowels</h3>
+          <p>Cells in the grid with a red '*' are vowels.</p>
+          <div class="image-container">
+              <img src="images/grid-vowels.jpg" alt="Grid showing vowel cells marked with red asterisks">
+          </div>
+
+          <h3>Targets</h3>
+          <p>At the row end and the bottom of columns are totals of the letter values - see 'Letter tray' below.</p>
+          <div class="image-container">
+              <img src="images/row-column-totals.jpg" alt="Grid showing target totals at row ends and column bottoms">
+          </div>
+
+          <h3>The '!' Indicator</h3>
+          <p>If a target total has an exclamation point '!' after it, it means that the word contains at least 2 of one or more letters - not necessarily as a double.</p>
+          <div class="image-container">
+              <img src="images/double-letter.jpg" alt="Target total with exclamation mark indicating repeated letters">
+          </div>
+
+          <h2>The Letter Tray</h2>
+          <p>The letter tray is made of letter-cards and shows you which letters are in the words.</p>
+          <div class="image-container">
+              <img src="images/letter-tray.jpg" alt="Letter tray showing available letters">
+          </div>
+          <p>The top row has all the vowels - whether or not they appear in the puzzle.</p>
+
+          <h3>Letter Values</h3>
+          <p>Each letter has a value (A=1, B=2, etc) shown in the top right corner of the letter card.</p>
+          <div class="image-container">
+              <img src="images/letter-value.jpg" alt="Letter card showing value in top right corner">
+          </div>
+          <p>The letters in a word add up to the target values at the end of the rows and bottom of the columns.</p>
+
+          <h3>Letter Count</h3>
+          <p>The figure in the red circle below the letter is the number of times it appears in the puzzle.</p>
+          <div class="image-container">
+              <img src="images/letter-count.jpg" alt="Letter card showing count in red circle">
+          </div>
+
+          <h3>Using the Letter Tray</h3>
+          <p>With a cell selected in the puzzle grid, click/tap on a letter in the tray to place it. This will reduce the number below the letter by 1.</p>
+          <p>If there are no more of a particular letter available, its card turns pink.</p>
+          <div class="image-container">
+              <img src="images/all-letters-used.jpg" alt="Letter card turned pink when all letters are used">
+          </div>
+
+          <p><strong>Remove a letter from the puzzle grid:</strong> Click or tap on a letter in the puzzle grid and it will return to the letter tray and increase the count by 1.</p>
+
+          <h2>The Timer</h2>
+          <p>As soon as you place your first letter in the grid, the timer starts.</p>
+          <div class="image-container">
+              <img src="images/timer-started.jpg" alt="Timer display showing elapsed time">
+          </div>
+
+          <p>You can click on the pause button to the left if you want to stop and come back.</p>
+
+          <p>The game also pauses automatically if:</p>
+          <ul>
+              <li>You change the difficulty grid</li>
+              <li>You change the puzzle day</li>
+          </ul>
+
+          <p>If you stay on the same day but choose a different grid, the one you have left will show a video play button - click/tap on that to return to carry on playing that grid.</p>
+          <div class="image-container">
+              <img src="images/play-grid.jpg" alt="Grid selector with play button to resume">
+          </div>
+
+          <h2>Play Progress</h2>
+          <p>As you place letters, the row/column targets reduce by the value of the letter you have placed. The goal of course is to find the right word and have the target reduced to 0.</p>
+
+          <p>If it reduces to 0 and you have the correct word - then the target box will turn green.</p>
+          <div class="image-container">
+              <img src="images/target-green.jpg" alt="Target box turned green indicating correct word">
+          </div>
+
+          <p>If it reduces to 0 and the box is pink, it means the total is correct, but the word is incorrect.</p>
+          <div class="image-container">
+              <img src="images/target-pink.jpg" alt="Target box turned pink indicating correct total but wrong word">
+          </div>
+
+          <p>The game is complete when all targets are 0 and all boxes are green.</p>
+          <div class="image-container">
+              <img src="images/completed-puzzle.jpg" alt="Completed puzzle with all green target boxes">
+          </div>
+
+          <p>Your progress on any grid/day is stored so that you can leave a grid/day and return later to carry on.</p>
+
+          <p>When you complete a puzzle, the grid selector at the top shows a green tick.</p>
+          <div class="image-container">
+              <img src="images/ticked-grid-selector.jpg" alt="Grid selector with green tick indicating completion">
+          </div>
+
+          <h2>Hints & Strategy</h2>
+          <p>Gokuro is a game of logic and deduction. Here are a few tips to help you get started:</p>
+
+          <div class="strategy-tip">
+              <strong>Start Small:</strong> Begin by looking at the rows or columns with the lowest target totals. A smaller total severely limits the combination of letters that can be used.
+          </div>
+
+          <div class="strategy-tip">
+              <strong>Vowels First:</strong> Vowels (A=1, E=5, I=9, O=15, U=21) are the most common letters. Test combinations of vowels first to see what total value remains to be found from the consonants. (Remember: Vowel cells are marked with a red '*').
+          </div>
+
+          <div class="strategy-tip">
+              <strong>Use the Letter Counts:</strong> The figure in the red circle below each letter in the tray is the total number of times that letter appears in the entire puzzle. If a letter only appears once, placing it immediately eliminates it as a possibility for every other word in the grid.
+          </div>
+
+          <div class="strategy-tip">
+              <strong>Cross-Reference:</strong> Every letter you place must work both horizontally and vertically. If a letter works for the row total but makes the column total impossible, you've found a mistake!
+          </div>
+
+          <div class="strategy-tip">
+              <strong>Don't Fear the Pink Box:</strong> If a target total reduces to 0 and turns pink, it means you have the correct total value, but the word is incorrect (wrong letters or wrong order). This is still valuable information, as you now know the required total value of the letters is correct!
+          </div>
+
+          <h2>Note on Dictionary</h2>
+          <div class="note">
+              <p>The puzzle was created from a dictionary of over 11,000 valid words. It is likely that some of the words are not common; they may be archaic or have obscure meanings and they may be unfamiliar to you. It is possible to get the words by completing other interlocking words.</p>
+              
+              <p>If there is a word unknown to you, take the chance to look it up and learn something new.</p>
+              
+              <p>For British players, you will find that many spellings are US English; so you will get 'OCHER' instead of 'OCHRE', 'FAVOR' instead of 'FAVOUR'.</p>
+          </div>
+
+          <hr>
+          
+          <p class="closing-message">
+              It was great fun to create - I hope you have fun playing. <strong>Gokuro!</strong>
+          </p>
+      </div>
+
+
+
+      
+
       <button type="button" class="modal-action" data-close-modal>Close</button>
     </div>
   </div>

@@ -284,7 +284,7 @@ h1 {
 
 .modal-dialog {
   position: relative;
-  background: #e9f2fe;
+  background: #ffffff; /*#e9f2fe*/;
   color: var(--fg);
   border: 4px solid #1d4ed8;
   border-radius: 18px;
@@ -301,7 +301,7 @@ h1 {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #1d4ed8;
-  text-align: center;
+  text-align: left; /*center;*/
 }
 
 .modal-subheading {

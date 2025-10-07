@@ -1,12 +1,28 @@
-const CACHE_NAME = 'gokuro-cache-v2.1';
+const CACHE_NAME = 'gokuro-cache-v2.2';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
+  '/modal-styles.css'
   '/app.js',
   '/manifest.webmanifest',
   '/images/icons/icon-192.png',
-  '/images/icons/icon-512.png'
+  '/images/icons/icon-512.png',
+  '/images/all-letters-used.jpg',
+  '/images/completed-puzzle.jpg',
+  '/images/day-selectors.jpg',
+  '/images/double-letter.jpg',
+  '/images/grid-selectors.jpg',
+  '/images/grid-vowels.jpg',
+  '/images/letter-count.jpg',
+  '/images/letter-tray.jpg',
+  '/images/letter-value.jpg',
+  '/images/play-grid.jpg',
+  '/images/row-column-totals.jpg',
+  '/images/target-green.jpg',
+  '/images/target-pink.jpg',
+  '/images/ticked-grid-selector.jpg',
+  '/images/timer-started.jpg'
 ];
 
 self.addEventListener('install', (event) => {

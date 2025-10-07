@@ -1,0 +1,145 @@
+/* Modal-optimized styles for How to Play content */
+
+.modal-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    padding: 0;
+    margin: 0;
+}
+
+.modal-content h1 {
+    color: #2c3e50;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.modal-content h2 {
+    color: #34495e;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-left: 4px solid #3498db;
+    padding-left: 15px;
+    font-size: 1.3em;
+}
+
+.modal-content h3 {
+    color: #2c3e50;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.modal-content p {
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.modal-content img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 10px auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: block;
+}
+
+.modal-content .image-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.modal-content ul {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+.modal-content li {
+    margin-bottom: 8px;
+}
+
+.modal-content .note {
+    background-color: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.modal-content .strategy-tip {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.modal-content .strategy-tip strong {
+    color: #856404;
+}
+
+.modal-content hr {
+    margin: 40px 0;
+    border: none;
+    border-top: 2px solid #eee;
+}
+
+.modal-content .closing-message {
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    margin-top: 20px;
+}
+
+/* Modal-specific adjustments */
+.modal-content {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* Scrollbar styling for webkit browsers */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Responsive adjustments for smaller modal windows */
+@media (max-width: 600px) {
+    .modal-content h1 {
+        font-size: 1.5em;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+        margin-top: 25px;
+    }
+    
+    .modal-content h3 {
+        font-size: 1.1em;
+        margin-top: 20px;
+    }
+    
+    .modal-content .strategy-tip,
+    .modal-content .note {
+        padding: 12px;
+        margin: 12px 0;
+    }
+}
