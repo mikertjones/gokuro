@@ -2087,9 +2087,44 @@ function incrementMap(map, key) {
 
 bootstrap();
 
-if ('serviceWorker' in navigator) {
+/*if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch((error) => {
     console.error('Service worker registration failed', error);
   });
 }
+*/
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then((registration) => {
+      console.log('Service Worker registered successfully:', registration);
 
+      // 1. Listen for when a new worker is found
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+
+        if (installingWorker) {
+          console.log('New Service Worker found, installing...');
+          
+          // 2. Listen for the new worker's state change
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed') {
+              console.log('New Service Worker installed (waiting phase skipped via skipWaiting).');
+            }
+            
+            if (installingWorker.state === 'activated') {
+              console.log('New Service Worker activated and ready to control client.');
+              
+              // 3. Force the application to reload to pick up the new assets.
+              // **WARNING:** This forces a refresh without user consent.
+              // For better UX, you would show a notification/prompt here.
+              console.log('Reloading window to complete update...');
+              window.location.reload(); 
+            }
+          });
+        }
+      });
+    })
+    .catch((error) => {
+      console.error('Service worker registration failed:', error);
+    });
+}
