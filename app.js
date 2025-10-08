@@ -525,6 +525,32 @@ function navigateDay(offset) {
   if (nextIndex < 0 || nextIndex >= weeklyEntries.length) {
     return;
   }
+
+  // Determine the direction
+  const direction = offset > 0 ? 'next' : 'previous';
+
+  // -----------------------------------------------------------------
+  // GA4 TRACKING CODE START
+  // -----------------------------------------------------------------
+
+  // Check if gtag is available before trying to send an event
+  if (typeof gtag === 'function') {
+    gtag('event', 'day_navigation', {
+      // Event parameters (these are the custom details you are tracking)
+      'navigation_direction': direction,
+      'navigation_offset': offset, // e.g., 1 or -1
+      'from_day_index': activeDayIndex,
+      'to_day_index': nextIndex
+      // You can also include 'from_day' and 'to_day' if you can derive the day name
+    });
+  }
+
+  // -----------------------------------------------------------------
+  // GA4 TRACKING CODE END
+  // -----------------------------------------------------------------
+
+
+
   applyDayEntry(nextIndex, { maintainSelection: true });
 }
 
@@ -680,6 +706,26 @@ function init() {
     button.addEventListener('click', () => {
       const key = button.dataset.puzzle;
       setActivePuzzle(key);
+
+      // --- START Google Analytics Tracking Code ---
+      
+      // Check if the gtag function is available before calling it
+      if (typeof gtag === 'function') {
+          gtag('event', 'select_difficulty', {
+              'event_category': 'puzzle_selection',
+              'event_label': key, // The puzzle size (e.g., '5x5')
+              'value': 1 
+          });
+          
+          console.log(`GA Event Sent: Puzzle Size Selected - ${key}`);
+      } else {
+          // This should only happen if the gtag script failed to load or is blocked
+          console.warn('GA tracking failed: gtag() function not found.');
+      }
+      
+      // --- END Google Analytics Tracking Code ---
+
+
     });
   });
 
@@ -2041,6 +2087,26 @@ function openHowToPlayModal() {
   if (!howToPlayModal || isModalOpen()) {
     return;
   }
+
+  // -----------------------------------------------------------------
+  // GA4 TRACKING CODE START
+  // This fires every time a player attempts to open the modal
+  // -----------------------------------------------------------------
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'view_tutorial', {
+      // Use 'view_tutorial' as the event name
+      // Use 'content_type' and 'content_id' to describe the content
+      'content_type': 'modal',
+      'content_id': 'how_to_play'
+    });
+  }
+
+  // -----------------------------------------------------------------
+  // GA4 TRACKING CODE END
+  // -----------------------------------------------------------------
+
+
 
   lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   howToPlayModal.classList.add('is-open');

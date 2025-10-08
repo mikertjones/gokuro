@@ -58,6 +58,36 @@ h1 {
   color: #1d4ed8;
 }
 
+
+
+blockquote {
+  border: none;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  margin-bottom: -10px;
+}
+
+blockquote h3 {
+  font-size: 21px;
+  margin-top:-20px;
+}
+
+blockquote h3:before {
+  content: open-quote;
+  font-weight: bold;
+  font-size: 40px;
+  color: #225be4;
+}
+
+blockquote h3:after {
+  content: close-quote;
+  font-weight: bold;
+  font-size: 40px;
+  color: #225be4;
+}
+
+
+
+
 .brand-logo {
   width: min(60vw, 340px);
   height: auto;
