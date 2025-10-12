@@ -8,6 +8,8 @@ const APP_SHELL = [
   '/manifest.webmanifest',
   '/images/icons/icon-192.png',
   '/images/icons/icon-512.png',
+  '/images/icons/favicon-16x16.png',
+  '/images/icons/favicon-32x32.png',
   '/images/all-letters-used.jpg',
   '/images/completed-puzzle.jpg',
   '/images/day-selectors.jpg',
