@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gokuro-cache-v4.2';
+const CACHE_NAME = 'gokuro-cache-v5.0';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -24,7 +24,8 @@ const APP_SHELL = [
   '/images/target-green.jpg',
   '/images/target-pink.jpg',
   '/images/ticked-grid-selector.jpg',
-  '/images/timer-started.jpg'
+  '/images/timer-started.jpg',
+  '/images/social-share-image.jpg'
 ];
 
 self.addEventListener('install', (event) => {
