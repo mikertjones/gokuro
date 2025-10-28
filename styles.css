@@ -466,13 +466,25 @@ blockquote h3:after {
 
 .board-area {
   display: flex;
-  height: 100dvh; /* Board takes full viewport */
-  min-height: 800px; /* Minimum usable size */
+  /*height: 100dvh;*/ /* Board takes full viewport */
+  /*min-height: 800px;*/ /* Minimum usable size */
 
   gap: 24px;
   align-items: stretch;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+
+.board-area {
+  min-height: 600px;
+  /* Default: natural height, not forced to viewport */
+}
+
+@media (max-height: 800px) {
+  .board-area {
+    height: 100dvh;
+  }
 }
 
 .grid-wrapper,
