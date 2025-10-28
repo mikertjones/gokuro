@@ -709,6 +709,11 @@ blockquote h3:after {
   font: inherit;
   text-align: center;
   text-transform: uppercase;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none; /* iOS specific */
+
 }
 
 .cell input::placeholder {
