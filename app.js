@@ -1752,6 +1752,7 @@ function handleLetterCardSelection(event, state, letter) {
     targetInput.value = letter;
     targetInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
+/*
   if (typeof targetInput.focus === 'function') {
     try {
       targetInput.focus({ preventScroll: true });
@@ -1766,6 +1767,7 @@ function handleLetterCardSelection(event, state, letter) {
       // no-op if selection fails
     }
   }
+*/  
 }
 
 function handleInput(event, state) {

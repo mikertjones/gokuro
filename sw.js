@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gokuro-cache-v5.4';
+const CACHE_NAME = 'gokuro-cache-v5.5';
 const APP_SHELL = [
   '/',
   '/index.html',
