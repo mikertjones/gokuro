@@ -163,16 +163,32 @@ function normalizeDateValue(value) {
 }
 
 function startOfDay(date) {
-  const copy = new Date(date.getTime());
+/*  const copy = new Date(date.getTime());
   copy.setHours(0, 0, 0, 0);
-  return copy;
+  return copy;*/
+
+  // Use UTC midnight instead of local midnight
+  const utc = new Date(date.getTime());
+  return new Date(Date.UTC(
+    utc.getUTCFullYear(),
+    utc.getUTCMonth(),
+    utc.getUTCDate(),
+    0, 0, 0, 0
+  ));
+
 }
 
 function formatDateISO(date) {
-  const year = date.getFullYear();
+/*  const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}`;*/
+
+  // Use UTC components
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;  
 }
 
 function serializeDate(value) {
