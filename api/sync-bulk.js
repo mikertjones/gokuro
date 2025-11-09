@@ -31,6 +31,16 @@ async function verifyAuthToken(token) {
  * Returns: { puzzles: { "2025-10-12-5x5": {...progress...}, ... } }
  */
 module.exports = async (req, res) => {
+    // CORS headers - allow requests from gokuro.net
+    res.setHeader('Access-Control-Allow-Origin', 'https://gokuro.net');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
