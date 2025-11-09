@@ -1,6 +1,5 @@
 // Bulk sync endpoint - fetches progress for multiple puzzles at once
 const { Pool } = require('pg');
-const { createRemoteJWKSet, jwtVerify } = require('jose');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -10,10 +9,21 @@ const pool = new Pool({
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-u2bw4lxudhfznipt.uk.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://gokuro.vercel.app/api';
-const JWKS = createRemoteJWKSet(new URL(`https://${AUTH0_DOMAIN}/.well-known/jwks.json`));
+
+// Cache jose imports
+let joseModule = null;
+
+async function getJose() {
+  if (!joseModule) {
+    joseModule = await import('jose');
+  }
+  return joseModule;
+}
 
 async function verifyAuthToken(token) {
   try {
+    const { createRemoteJWKSet, jwtVerify } = await getJose();
+    const JWKS = createRemoteJWKSet(new URL(`https://${AUTH0_DOMAIN}/.well-known/jwks.json`));
     const { payload } = await jwtVerify(token, JWKS, {
       issuer: `https://${AUTH0_DOMAIN}/`,
       audience: AUTH0_AUDIENCE,
