@@ -241,7 +241,7 @@ async function bulkSyncAllPuzzles() {
             authorizationParams: { audience: AUTH0_AUDIENCE },
         });
 
-        const response = await fetch('/api/sync-bulk', {
+        const response = await fetch('https://gokuro.vercel.app/api/sync-bulk', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -480,7 +480,7 @@ async function uploadPuzzleToServer(puzzleId, localData, token) {
         immediate: false // This is a bulk sync, not immediate
     };
 
-    const response = await fetch('/api/sync', {
+    const response = await fetch('https://gokuro.vercel.app/api/sync', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -577,7 +577,7 @@ async function syncProgressLogic(isImmediate, isInitialLoad = false) {
             immediate: !!isImmediate,
         };
 
-        const res = await fetch('/api/sync', {
+        const res = await fetch('https://gokuro.vercel.app/api/sync', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
