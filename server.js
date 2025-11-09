@@ -2,12 +2,24 @@
 const express = require('express');
 require('dotenv').config();
 
+
+const fs = require('fs');
+const https = require('https');
+
+
+
+
 const puzzlesHandler = require('./api/puzzles/[type].js');
+const syncHandler = require('./api/sync.js');
+const syncBulkHandler = require('./api/sync-bulk.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const staticRoot = __dirname;
+
+app.use(express.static('public'));
+
 
 app.set('trust proxy', true);
 
@@ -19,6 +31,12 @@ app.get('/api/puzzles/:type', async (req, res, next) => {
   }
 });
 
+app.post('/api/sync', express.json(), (req, res, next) =>
+  Promise.resolve(syncHandler(req, res)).catch(next)
+);
+app.post('/api/sync-bulk', express.json(), (req, res, next) =>
+  Promise.resolve(syncBulkHandler(req, res)).catch(next)
+);
 app.use(express.static(staticRoot, { extensions: ['html'] }));
 
 app.use((req, res, next) => {
@@ -36,6 +54,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, HOST, () => {
+
+https.createServer(
+  {
+    key: fs.readFileSync('./certs/192.168.0.25-key.pem'),
+    cert: fs.readFileSync('./certs/192.168.0.25.pem'),
+  },
+  app
+).listen(3000, () => {
+  console.log('HTTPS server running at https://192.168.0.25:3000');
+});
+
+/*app.listen(PORT, HOST, () => {
   console.log(`Gokuro webapp listening on http://${HOST}:${PORT}`);
 });
+*/

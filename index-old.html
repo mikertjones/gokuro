@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 
@@ -36,35 +36,19 @@
   <!-- SEO Meta Tags -->
   <meta name="keywords" content="word puzzles, daily puzzles, brain games, vocabulary, offline games">
 
-  <!-- Load Tailwind CSS for new elements (temporary for structure) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+
 
 </head>
 <body>
   <img src="images/gokuro-logo.jpg" alt="Gokuro word puzzle logo" class="brand-logo" />
 
-  <!-- Utility Area -->
+<!--   <blockquote class="quote-text">
+    <h3>Gokuro: thank you for your hard work.</h3>
+  </blockquote>
+ -->
   <div class="info-button-row">
     <button type="button" id="how-to-play-btn" class="how-to-button">How to play Gokuro</button>
-    <!-- NEW: Login/Logout Button calls function in user.js -->
-    <button type="button" id="auth-btn" class="how-to-button" onclick="handleAuth()">Login</button>
   </div>
-  
-  <!-- NEW: Sync Button Area (Above Grid Selectors) -->
-<!--   <div class="sync-button-wrapper p-2 w-full max-w-lg mx-auto flex flex-col items-center">
-    <button type="button" 
-            id="syncButton" 
-            class="w-full px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md 
-                   hover:bg-indigo-700 transition duration-150 disabled:opacity-50"
-            onclick="syncProgress()">
-        ☁️ Sync Progress & Save PB
-    </button>
- -->    <!-- Message area to display status (Syncing, Success, Failure) -->
-    <p id="statusMessage" class="text-center h-4 text-xs mt-1"></p>
-    <!-- NEW: Display user email once logged in -->
-    <p id="userStatus" class="text-center h-4 text-xs mt-1 text-gray-700 italic"></p>
-  </div>
-  <!-- END NEW -->
 
   <div class="toggle-buttons" role="group" aria-label="Grid size selection">
     <button type="button" class="grid-toggle active" data-puzzle="5x5">5x5</button>
@@ -176,7 +160,7 @@
           <p>The top row has all the vowels - whether or not they appear in the puzzle.</p>
 
           <h3>Letter Values</h3>
-          <p>Each letter has a value (A=1, E=5, I=9, O=15, U=21) shown in the top right corner of the letter card.</p>
+          <p>Each letter has a value (A=1, B=2, etc) shown in the top right corner of the letter card.</p>
           <div class="image-container">
               <img src="images/letter-value.jpg" alt="Letter card showing value in top right corner">
           </div>
@@ -281,20 +265,15 @@
       </div>
 
 
+
       
+
       <button type="button" class="modal-action" data-close-modal>Close</button>
     </div>
   </div>
 
-<!-- SCRIPT LOADING ORDER IS CRITICAL -->
-  <!-- 1. Load the Auth0 SDK FIRST to ensure 'createAuth0Client' is defined -->
-  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
-
-  <!-- 2. Load User/Auth Logic (relies on Auth0 SDK - NO DEFER) -->
-  <script src="users.js"></script> 
-  
-  <!-- 3. Load Main Game Logic (uses functions exposed by user.js - uses DEFER) -->
   <script src="app.js" defer></script>
-  
-  </body>
+</body>
 </html>
+
+

@@ -1,13 +1,15 @@
 {
-    "name":  "gokuro-api",
-    "version":  "1.0.0",
-    "dependencies":  {
-                         "dotenv":  "^17.2.3",
-                         "express":  "^5.1.0",
-                         "pg":  "^8.11.0"
-                     },
-    "scripts":  {
-                    "start":  "node server.js",
-                    "dev":  "node server.js"
-                }
+    "name": "gokuro-api",
+    "version": "1.0.0",
+    "dependencies": {
+        "dotenv": "^17.2.3",
+        "express": "^5.1.0",
+        "i": "^0.3.7",
+        "jose": "^6.1.0",
+        "pg": "^8.11.0"
+    },
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    }
 }

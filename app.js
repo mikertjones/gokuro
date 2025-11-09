@@ -443,6 +443,8 @@ async function performApplyDayEntry(index, { maintainSelection = false } = {}) {
     console.error('Failed to persist progress before day switch', error);
   }
 
+  if (!isRestoringProgress && typeof window.syncOnPause === 'function') window.syncOnPause();
+
   activeDayIndex = index;
   const nextPuzzleDate = normalizeDateString(entry.puzzleDate);
   const puzzleMap = entry.puzzleMap || {};
@@ -732,7 +734,8 @@ function init() {
   if (resetButton) {
     resetButton.addEventListener('click', () => {
       if (activeKey) {
-        setActivePuzzle(activeKey, { force: true, reset: true });
+        setActivePuzzle(activeKey, { force: true, reset: true })
+            .then(() => { if (typeof window.syncOnNewPuzzle === 'function') window.syncOnNewPuzzle(); }); // add;
       }
     });
   }
@@ -785,6 +788,7 @@ async function performSetActivePuzzle(key, { force = false, reset = false, targe
         statusOverride: puzzleCompleted ? 'complete' : 'paused',
         targetKey: composePuzzleStorageKey(previousDate, previousKey),
       });
+      if (!isRestoringProgress && typeof window.syncOnPause === 'function') window.syncOnPause();
     } catch (error) {
       console.error('Failed to save puzzle progress', error);
     }
@@ -815,6 +819,8 @@ async function performSetActivePuzzle(key, { force = false, reset = false, targe
     await deletePuzzleProgressRecord(storageKey);
     setPuzzleStatusCacheEntry(storageKey, null);
     refreshButtonStatusesForActiveDay();
+
+    /*if (typeof window.syncOnNewPuzzle === 'function') window.syncOnNewPuzzle();*/
   } else {
     try {
       await restoreActivePuzzleProgress(activeDate, key);
@@ -827,6 +833,8 @@ async function performSetActivePuzzle(key, { force = false, reset = false, targe
   updateLetterArrayUsage(activeState);
   handleResize();
   updateTimerControls();
+
+  /*if (typeof window.syncOnNewPuzzle === 'function') window.syncOnNewPuzzle();*/
 }
 
 function setActivePuzzle(key, options = {}) {
@@ -927,6 +935,7 @@ function refreshButtonStatusesForActiveDay() {
     }
   });
 }
+window.refreshButtonStatusesForActiveDay = refreshButtonStatusesForActiveDay;
 
 const STORAGE_DB_NAME = 'gokuro-progress';
 const STORAGE_STORE_NAME = 'puzzleProgress';
@@ -1058,6 +1067,7 @@ async function getPuzzleProgressRecord(storageKey) {
   const store = await ensureProgressStore();
   return store.get(storageKey);
 }
+window.getPuzzleProgressRecord = getPuzzleProgressRecord;
 
 async function savePuzzleProgressRecord(record) {
   if (!record || !record.id) {
@@ -1066,6 +1076,7 @@ async function savePuzzleProgressRecord(record) {
   const store = await ensureProgressStore();
   await store.set(record);
 }
+window.savePuzzleProgressRecord = savePuzzleProgressRecord;
 
 async function deletePuzzleProgressRecord(storageKey) {
   if (!storageKey) {
@@ -1188,9 +1199,11 @@ async function restoreActivePuzzleProgress(date, puzzleKey) {
       input.value = value;
       handleInput({ target: input }, activeState);
     });
-    isRestoringProgress = false;
+    // Keep restore guard active while updating totals to prevent sync triggers
     updateTotals(activeState);
     updateLetterArrayUsage(activeState);
+    // Now safe to clear the restore guard
+    isRestoringProgress = false;
   }
 
   setPuzzleStatusCacheEntry(storageKey, {
@@ -1752,22 +1765,6 @@ function handleLetterCardSelection(event, state, letter) {
     targetInput.value = letter;
     targetInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
-/*
-  if (typeof targetInput.focus === 'function') {
-    try {
-      targetInput.focus({ preventScroll: true });
-    } catch (error) {
-      targetInput.focus();
-    }
-  }
-  if (typeof targetInput.select === 'function') {
-    try {
-      targetInput.select();
-    } catch (error) {
-      // no-op if selection fails
-    }
-  }
-*/  
 }
 
 function handleInput(event, state) {
@@ -1899,6 +1896,15 @@ function updateTotalStyles(state) {
     const remaining = state.rowRemaining[idx];
     const correct = remaining === 0 && isGroupCorrect(state.rowCellGroups[idx]);
     if (correct) {
+
+// Check if the sync function is available (meaning user.js loaded and user is logged in)
+      const bulkSyncing = typeof window.isBulkSyncing === 'function' && window.isBulkSyncing();
+      const initializing = typeof window.isInitializing === 'function' && window.isInitializing();
+      if (!isRestoringProgress && !bulkSyncing && !initializing && typeof window.syncProgress === 'function' && !el.classList.contains('complete')) {  
+          console.log('✅ Line completed for the first time. Triggering debounced cloud sync.');
+          window.syncProgress(); 
+      }
+              
       el.classList.add('complete');
     } else if (hasEntry(state.rowCellGroups[idx]) || remaining !== state.rowBases[idx]) {
       el.classList.add('progress');
@@ -1910,6 +1916,15 @@ function updateTotalStyles(state) {
     const remaining = state.colRemaining[idx];
     const correct = remaining === 0 && isGroupCorrect(state.colCellGroups[idx]);
     if (correct) {
+
+// Check if the sync function is available (meaning user.js loaded and user is logged in)
+      const bulkSyncing = typeof window.isBulkSyncing === 'function' && window.isBulkSyncing();
+      const initializing = typeof window.isInitializing === 'function' && window.isInitializing();
+      if (!isRestoringProgress && !bulkSyncing && !initializing && typeof window.syncProgress === 'function' && !el.classList.contains('complete')) {  
+          console.log('✅ Line completed for the first time. Triggering debounced cloud sync.');
+          window.syncProgress(); 
+      }
+              
       el.classList.add('complete');
     } else if (hasEntry(state.colCellGroups[idx]) || remaining !== state.colBases[idx]) {
       el.classList.add('progress');
@@ -2030,6 +2045,7 @@ function handlePauseButtonClick() {
   timerPaused = true;
   updateTimerControls();
   scheduleSaveActivePuzzle({ statusOverride: 'paused' });
+  if (!isRestoringProgress && typeof window.syncOnPause === 'function') window.syncOnPause();
 }
 
 function checkForCompletion(state) {
@@ -2046,6 +2062,7 @@ function checkForCompletion(state) {
     }
     updateTimerControls();
     scheduleSaveActivePuzzle({ statusOverride: 'complete' });
+    if (!isRestoringProgress && typeof window.syncOnPause === 'function') window.syncOnPause();
   }
 }
 
@@ -2153,14 +2170,132 @@ function incrementMap(map, key) {
   map.set(key, (map.get(key) || 0) + 1);
 }
 
+function getCurrentGameState() {
+  const puzzleDate = getActivePuzzleDate();
+  const gridSize = activeKey;
+  const entries = activeState ? collectPuzzleEntries(activeState) : {};
+  const elapsedSeconds = getCurrentElapsedSeconds();
+
+  const hasProgress = Object.keys(entries).length > 0 || elapsedSeconds > 0;
+  let status;
+  if (puzzleCompleted) {
+    status = 'complete';
+  } else if (!timerIntervalId && (timerPaused || hasProgress)) {
+    status = hasProgress ? 'paused' : 'not-started';
+  } else {
+    status = hasProgress ? 'started' : 'not-started';
+  }
+
+  return {
+    puzzle_id: (puzzleDate && gridSize) ? composePuzzleStorageKey(puzzleDate, gridSize) : 'unknown',
+    grid_size: gridSize || 'unknown',
+    elapsed_seconds: elapsedSeconds,
+    was_paused: Boolean(timerPaused && !puzzleCompleted),
+    progress_json: JSON.stringify({
+      entries,
+      storageKey: (puzzleDate && gridSize) ? composePuzzleStorageKey(puzzleDate, gridSize) : null,
+      updatedAt: Date.now()
+    }),
+    status,
+    client_updated_at: new Date().toISOString()
+  };
+}
+window.getCurrentGameState = getCurrentGameState;
+
+/**
+ * Gets all puzzle_ids for the current week (up to 28: 7 days × 4 grids)
+ * @returns {string[]} Array of puzzle_ids like ["2025-10-12-5x5", "2025-10-12-5x6", ...]
+ */
+function getAllWeeklyPuzzleIds() {
+  const puzzleIds = [];
+  for (const entry of weeklyEntries) {
+    const date = normalizeDateString(entry.puzzleDate);
+    if (!date) continue;
+    const puzzleMap = entry.puzzleMap || {};
+    for (const gridSize of VALID_PUZZLE_KEYS) {
+      if (puzzleMap[gridSize]) {
+        puzzleIds.push(composePuzzleStorageKey(date, gridSize));
+      }
+    }
+  }
+  return puzzleIds;
+}
+window.getAllWeeklyPuzzleIds = getAllWeeklyPuzzleIds;
+
+window.applyLoadedGameState = async function applyLoadedGameState(data) {
+  if (!data) return;
+  isRestoringProgress = true;
+  try {
+    const {
+      puzzle_id: date,
+      grid_size: key,
+      elapsed_seconds = 0,
+      status = 'started',
+      progress_json
+    } = data;
+
+    // Switch to the correct day/grid if needed
+    if (date && key && (getActivePuzzleDate() !== date || activeKey !== key)) {
+      const entryIndex = weeklyEntries.findIndex(e => normalizeDateString(e.puzzleDate) === normalizeDateString(date));
+      if (entryIndex >= 0) {
+        await applyDayEntry(entryIndex, { maintainSelection: false });
+      }
+      await setActivePuzzle(key, { force: true, targetDate: date });
+    }
+
+    // Apply entries to the current grid
+    const parsed = typeof progress_json === 'string' ? JSON.parse(progress_json) : (progress_json || {});
+    const entries = parsed.entries || {};
+    if (activeState && activeState.inputs) {
+      // keep restore mode active while applying entries
+      
+      Object.entries(entries).forEach(([coord, value]) => {
+        const [r, c] = coord.split('-').map(Number);
+        const cell = activeState.rowCellGroups?.[r]?.[c];
+        const input = cell ? cell.querySelector('input') : null;
+        if (input) {
+          input.value = String(value || '').toUpperCase().slice(0, 1);
+          handleInput({ target: input }, activeState);
+        }
+      });
+      updateTotals(activeState);
+      updateLetterArrayUsage(activeState);
+    }
+
+    // Apply timer/status
+    timerStartTimestamp = 0;
+    timerAccumulatedSeconds = Math.max(0, Number(elapsed_seconds) || 0);
+    puzzleCompleted = status === 'complete';
+    timerPaused = status === 'paused';
+    updateTimerDisplay();
+    updateTimerControls();
+    if (completionMessage) {
+      completionMessage.style.display = puzzleCompleted ? 'inline' : 'none';
+    }
+
+    // Persist locally (preserve the remote timestamp to avoid sync conflicts)
+    const storageKey = composePuzzleStorageKey(getActivePuzzleDate(), activeKey);
+    const remoteTimestamp = parsed.updatedAt || Date.now();
+    await savePuzzleProgressRecord({
+      id: storageKey,
+      status,
+      entries,
+      elapsedSeconds: timerAccumulatedSeconds,
+      updatedAt: remoteTimestamp  // Use remote timestamp, not current time
+    }).catch(() => {});
+    setPuzzleStatusCacheEntry(storageKey, { status, elapsedSeconds: timerAccumulatedSeconds });
+    refreshButtonStatusesForActiveDay();
+
+
+  } catch (e) {
+    console.error('Failed to apply loaded game state', e);
+  } finally {
+    isRestoringProgress = false;
+  }
+}
+
 bootstrap();
 
-/*if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch((error) => {
-    console.error('Service worker registration failed', error);
-  });
-}
-*/
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js')
     .then((registration) => {
