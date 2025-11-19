@@ -325,11 +325,16 @@ blockquote h3:after {
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
 }
 
+.modal-dialog-small {
+  width: min(420px, 90vw);
+  padding: 20px 24px 20px;
+}
+
 .modal-dialog h2 {
   margin: 0;
   font-size: 1.6rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /*text-transform: uppercase;*/
   color: #1d4ed8;
   text-align: left; /*center;*/
 }
@@ -456,7 +461,124 @@ blockquote h3:after {
     border: 1px solid #10b981;
     font-size: 0.95em;
     margin-left: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
  }
+
+.share-button {
+    appearance: none;
+    border: none;
+    background: #059669;
+    color: #ffffff;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.share-button:hover {
+    background: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(5, 150, 105, 0.35);
+}
+
+.share-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+}
+
+.share-button:focus-visible {
+    outline: 3px solid rgba(5, 150, 105, 0.4);
+    outline-offset: 2px;
+}
+
+/* Share Preview Modal Styles */
+.share-preview-text {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: #1e293b;
+    text-align: center;
+}
+
+.share-preview-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.modal-action-secondary {
+    appearance: none;
+    border: 2px solid #64748b;
+    background: transparent;
+    color: #64748b;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    box-sizing: border-box;
+    margin: 0;
+    line-height: 1.5;
+    vertical-align: middle;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.modal-action-secondary:hover {
+    background: #64748b;
+    color: #ffffff;
+    border-color: #475569;
+}
+
+.modal-action-secondary:focus {
+    outline: 3px solid rgba(100, 116, 139, 0.35);
+    outline-offset: 3px;
+}
+
+.share-confirm-btn {
+    background: #059669 !important;
+    border: 2px solid #059669 !important;
+    color: #ffffff !important;
+    padding: 10px 20px !important;
+    font-size: 0.85rem !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    box-shadow: 0 10px 20px rgba(5, 150, 105, 0.22) !important;
+}
+
+.share-confirm-btn:hover {
+    background: #047857 !important;
+    border-color: #047857 !important;
+    box-shadow: 0 14px 30px rgba(5, 150, 105, 0.28) !important;
+    transform: translateY(-1px) !important;
+}
  
 
 

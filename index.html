@@ -83,7 +83,10 @@
       <div class="timer-display">
           <button type="button" id="timer-pause-btn" class="timer-pause-button" aria-label="Pause timer"></button>
           <span id="timer-text">00:00</span>
-          <span id="completion-message" style="display: none;">You got it! Well done</span>
+          <span id="completion-message" style="display: none;">
+              Nailed it! Terrific!
+              <button type="button" id="share-btn" class="share-button" aria-label="Share your result">📤 Share</button>
+          </span>
       </div>
   </div>
 
@@ -119,6 +122,23 @@
   <div class="install-wrapper">
     <button type="button" id="install-btn" class="install-button hidden" aria-hidden="true">Install App</button>
   </div>
+  <!-- Share Preview Modal -->
+  <div id="share-preview-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-share-modal></div>
+    <div class="modal-dialog modal-dialog-small" role="dialog" aria-modal="true" aria-labelledby="share-preview-heading">
+      <button type="button" class="modal-close" aria-label="Close dialog" data-close-share-modal>&times;</button>
+      
+      <div class="modal-content">
+        <h2 id="share-preview-heading">Cool - go ahead and share it!</h2>
+        <div class="share-preview-text" id="share-preview-text"></div>
+        <div class="share-preview-actions">
+          <button type="button" class="modal-action share-confirm-btn" id="share-confirm-btn">📤 Share</button>
+          <button type="button" class="modal-action-secondary" data-close-share-modal>Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="how-to-play-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="how-to-play-heading">

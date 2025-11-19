@@ -743,6 +743,7 @@ function init() {
   setupDayNavigation();
   window.addEventListener('resize', handleResize);
   setupHowToPlayModal();
+  setupShareButton();
 
   if (pauseButton) {
     pauseButton.addEventListener('click', handlePauseButtonClick);
@@ -2168,6 +2169,218 @@ function handleModalKeydown(event) {
 
 function incrementMap(map, key) {
   map.set(key, (map.get(key) || 0) + 1);
+}
+
+// --- SOCIAL SHARING FUNCTIONALITY ---
+
+/**
+ * Generates the share text for social media
+ */
+function generateShareText() {
+  const puzzleDate = getActivePuzzleDate();
+  const gridSize = activeKey;
+  const elapsedSeconds = getCurrentElapsedSeconds();
+  
+  // Format time
+  const minutes = Math.floor(elapsedSeconds / 60);
+  const seconds = elapsedSeconds % 60;
+  const timeStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
+  
+  // Format date for display
+  const dateObj = puzzleDate ? new Date(puzzleDate) : new Date();
+  const dateStr = dateObj.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  
+  // Create emoji grid representation
+  const difficultyEmoji = {
+    '5x5': '⭐',
+    '5x6': '⭐⭐',
+    '6x7': '⭐⭐⭐',
+    '7x7': '⭐⭐⭐⭐'
+  }[gridSize] || '⭐';
+  
+  // Build share text
+  const shareText = `🎯 Gokuro ${dateStr}
+${difficultyEmoji} ${gridSize} Grid
+⏱️ Time: ${timeStr}
+✅ Completed!
+
+Play daily word puzzles at gokuro.net`;
+  
+  return shareText;
+}
+
+/**
+ * Opens the share preview modal
+ */
+function openSharePreviewModal() {
+  const modal = document.getElementById('share-preview-modal');
+  const previewText = document.getElementById('share-preview-text');
+  
+  if (!modal || !previewText) return;
+  
+  // Generate and display the share text
+  const shareText = generateShareText();
+  previewText.textContent = shareText;
+  
+  // Show the modal
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  
+  // Focus the confirm button
+  const confirmBtn = document.getElementById('share-confirm-btn');
+  if (confirmBtn && typeof confirmBtn.focus === 'function') {
+    confirmBtn.focus();
+  }
+}
+
+/**
+ * Closes the share preview modal
+ */
+function closeSharePreviewModal() {
+  const modal = document.getElementById('share-preview-modal');
+  if (!modal) return;
+  
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+}
+
+/**
+ * Handles the share button click - opens preview modal
+ */
+function handleShareButtonClick() {
+  openSharePreviewModal();
+  
+  // Track preview open with GA
+  if (typeof gtag === 'function') {
+    gtag('event', 'share_preview_opened', {
+      content_type: 'puzzle_completion',
+      item_id: getActivePuzzleDate() + '-' + activeKey
+    });
+  }
+}
+
+/**
+ * Handles the actual sharing after preview confirmation
+ */
+async function handleShareConfirm() {
+  const shareText = generateShareText();
+  const shareData = {
+    title: 'Gokuro - Daily Word Puzzle',
+    text: shareText,
+    url: 'https://gokuro.net'
+  };
+  
+  // Track share attempt with GA
+  if (typeof gtag === 'function') {
+    gtag('event', 'share', {
+      method: 'button_click',
+      content_type: 'puzzle_completion',
+      item_id: getActivePuzzleDate() + '-' + activeKey
+    });
+  }
+  
+  try {
+    // Try native Web Share API (mobile)
+    if (navigator.share) {
+      await navigator.share(shareData);
+      
+      // Track successful share
+      if (typeof gtag === 'function') {
+        gtag('event', 'share_success', {
+          method: 'native_share',
+          content_type: 'puzzle_completion'
+        });
+      }
+      
+      console.log('Share successful via Web Share API');
+      closeSharePreviewModal();
+    } else {
+      // Fallback: Copy to clipboard (desktop)
+      await navigator.clipboard.writeText(shareText);
+      
+      // Track clipboard copy
+      if (typeof gtag === 'function') {
+        gtag('event', 'share_success', {
+          method: 'clipboard',
+          content_type: 'puzzle_completion'
+        });
+      }
+      
+      console.log('Share text copied to clipboard');
+      
+      // Show feedback in modal
+      const confirmBtn = document.getElementById('share-confirm-btn');
+      if (confirmBtn) {
+        const originalText = confirmBtn.textContent;
+        confirmBtn.textContent = '✅ Copied!';
+        confirmBtn.style.background = '#10b981';
+        
+        setTimeout(() => {
+          closeSharePreviewModal();
+          // Reset button after modal closes
+          setTimeout(() => {
+            confirmBtn.textContent = originalText;
+            confirmBtn.style.background = '';
+          }, 300);
+        }, 1200);
+      }
+    }
+  } catch (error) {
+    console.error('Share failed:', error);
+    
+    // Track share failure
+    if (typeof gtag === 'function') {
+      gtag('event', 'share_failed', {
+        error_message: error.message || 'unknown'
+      });
+    }
+    
+    // User cancelled or error occurred
+    if (error.name !== 'AbortError') {
+      alert('Unable to share. Please try again.');
+    }
+    
+    closeSharePreviewModal();
+  }
+}
+
+/**
+ * Sets up the share button and modal event listeners
+ */
+function setupShareButton() {
+  const shareButton = document.getElementById('share-btn');
+  if (shareButton) {
+    shareButton.addEventListener('click', handleShareButtonClick);
+  }
+  
+  // Set up share confirm button
+  const confirmBtn = document.getElementById('share-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', handleShareConfirm);
+  }
+  
+  // Set up close buttons for share modal
+  const modal = document.getElementById('share-preview-modal');
+  if (modal) {
+    const closeTargets = Array.from(modal.querySelectorAll('[data-close-share-modal]'));
+    closeTargets.forEach((element) => {
+      element.addEventListener('click', closeSharePreviewModal);
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+        event.preventDefault();
+        closeSharePreviewModal();
+      }
+    });
+  }
 }
 
 function getCurrentGameState() {
