@@ -47,8 +47,19 @@ async function verifyAuthToken(token) {
  * @param {object} res - The Vercel response object.
  */
 module.exports = async (req, res) => {
-    // CORS headers - allow requests from gokuro.net
-    res.setHeader('Access-Control-Allow-Origin', 'https://gokuro.net');
+    // CORS headers - allow requests from production and local development
+    const allowedOrigins = [
+        'https://gokuro.net',
+        'https://192.168.0.25:3000',
+        'http://localhost:3000',
+        'https://localhost:3000'
+    ];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', 'https://gokuro.net');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
