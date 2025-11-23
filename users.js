@@ -716,7 +716,14 @@ async function bulkSyncAllStats() {
  * @returns {object} Merged stats
  */
 function mergeStats(local, remote) {
+    console.log('[STATS-MERGE] Input:', { local, remote });
+    
+    // Handle cases where local or remote might be undefined or null
+    const localData = local || {};
+    const remoteData = remote || {};
+    
     const merged = {
+        grid_size: localData.grid_size || remoteData.grid_size || 'unknown',
         best_time_seconds: null,
         best_time_date: null,
         current_streak_days: 0,
@@ -726,53 +733,55 @@ function mergeStats(local, remote) {
     };
 
     // Personal Best: Take the faster time
-    if (local?.best_time_seconds !== null && remote?.best_time_seconds !== null) {
-        if (local.best_time_seconds < remote.best_time_seconds) {
-            merged.best_time_seconds = local.best_time_seconds;
-            merged.best_time_date = local.best_time_date;
+    if (localData.best_time_seconds !== null && localData.best_time_seconds !== undefined &&
+        remoteData.best_time_seconds !== null && remoteData.best_time_seconds !== undefined) {
+        if (localData.best_time_seconds < remoteData.best_time_seconds) {
+            merged.best_time_seconds = localData.best_time_seconds;
+            merged.best_time_date = localData.best_time_date;
         } else {
-            merged.best_time_seconds = remote.best_time_seconds;
-            merged.best_time_date = remote.best_time_date;
+            merged.best_time_seconds = remoteData.best_time_seconds;
+            merged.best_time_date = remoteData.best_time_date;
         }
-    } else if (local?.best_time_seconds !== null) {
-        merged.best_time_seconds = local.best_time_seconds;
-        merged.best_time_date = local.best_time_date;
-    } else if (remote?.best_time_seconds !== null) {
-        merged.best_time_seconds = remote.best_time_seconds;
-        merged.best_time_date = remote.best_time_date;
+    } else if (localData.best_time_seconds !== null && localData.best_time_seconds !== undefined) {
+        merged.best_time_seconds = localData.best_time_seconds;
+        merged.best_time_date = localData.best_time_date;
+    } else if (remoteData.best_time_seconds !== null && remoteData.best_time_seconds !== undefined) {
+        merged.best_time_seconds = remoteData.best_time_seconds;
+        merged.best_time_date = remoteData.best_time_date;
     }
 
     // Streaks: Take the most recent completion
-    const localLast = local?.last_completed_date ? new Date(local.last_completed_date) : null;
-    const remoteLast = remote?.last_completed_date ? new Date(remote.last_completed_date) : null;
+    const localLast = localData.last_completed_date ? new Date(localData.last_completed_date) : null;
+    const remoteLast = remoteData.last_completed_date ? new Date(remoteData.last_completed_date) : null;
 
     if (localLast && remoteLast) {
         if (localLast >= remoteLast) {
-            merged.current_streak_days = local.current_streak_days;
-            merged.last_completed_date = local.last_completed_date;
+            merged.current_streak_days = localData.current_streak_days;
+            merged.last_completed_date = localData.last_completed_date;
         } else {
-            merged.current_streak_days = remote.current_streak_days;
-            merged.last_completed_date = remote.last_completed_date;
+            merged.current_streak_days = remoteData.current_streak_days;
+            merged.last_completed_date = remoteData.last_completed_date;
         }
     } else if (localLast) {
-        merged.current_streak_days = local.current_streak_days;
-        merged.last_completed_date = local.last_completed_date;
+        merged.current_streak_days = localData.current_streak_days;
+        merged.last_completed_date = localData.last_completed_date;
     } else if (remoteLast) {
-        merged.current_streak_days = remote.current_streak_days;
-        merged.last_completed_date = remote.last_completed_date;
+        merged.current_streak_days = remoteData.current_streak_days;
+        merged.last_completed_date = remoteData.last_completed_date;
     }
 
     // Max Streak: Take the higher value
-    const localMax = local?.max_streak_days || 0;
-    const remoteMax = remote?.max_streak_days || 0;
+    const localMax = localData.max_streak_days || 0;
+    const remoteMax = remoteData.max_streak_days || 0;
     if (localMax > remoteMax) {
-        merged.max_streak_days = local.max_streak_days;
-        merged.max_streak_date = local.max_streak_date;
+        merged.max_streak_days = localData.max_streak_days;
+        merged.max_streak_date = localData.max_streak_date;
     } else {
         merged.max_streak_days = remoteMax;
-        merged.max_streak_date = remote?.max_streak_date;
+        merged.max_streak_date = remoteData.max_streak_date;
     }
 
+    console.log('[STATS-MERGE] Output:', merged);
     return merged;
 }
 
