@@ -117,7 +117,10 @@ function updateStatsOnCompletion(puzzleId, elapsedSeconds, isPristine = true) {
     // --- Update Personal Best ---
     // Only update PB if this was a pristine completion (no pauses, switches, or resets)
     if (isPristine) {
-        if (stats.best_time_seconds === null || elapsedSeconds < stats.best_time_seconds) {
+        // Treat 0 as invalid (no valid time recorded yet)
+        const hasValidPB = stats.best_time_seconds !== null && stats.best_time_seconds !== undefined && stats.best_time_seconds > 0;
+        
+        if (!hasValidPB || elapsedSeconds < stats.best_time_seconds) {
             stats.best_time_seconds = elapsedSeconds;
             stats.best_time_date = new Date().toISOString();
             changes.newPersonalBest = true;

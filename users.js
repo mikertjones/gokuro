@@ -732,9 +732,11 @@ function mergeStats(local, remote) {
         max_streak_date: null
     };
 
-    // Personal Best: Take the faster time
-    if (localData.best_time_seconds !== null && localData.best_time_seconds !== undefined &&
-        remoteData.best_time_seconds !== null && remoteData.best_time_seconds !== undefined) {
+    // Personal Best: Take the faster time (treat 0 as invalid)
+    const localHasValidPB = localData.best_time_seconds !== null && localData.best_time_seconds !== undefined && localData.best_time_seconds > 0;
+    const remoteHasValidPB = remoteData.best_time_seconds !== null && remoteData.best_time_seconds !== undefined && remoteData.best_time_seconds > 0;
+    
+    if (localHasValidPB && remoteHasValidPB) {
         if (localData.best_time_seconds < remoteData.best_time_seconds) {
             merged.best_time_seconds = localData.best_time_seconds;
             merged.best_time_date = localData.best_time_date;
@@ -742,10 +744,10 @@ function mergeStats(local, remote) {
             merged.best_time_seconds = remoteData.best_time_seconds;
             merged.best_time_date = remoteData.best_time_date;
         }
-    } else if (localData.best_time_seconds !== null && localData.best_time_seconds !== undefined) {
+    } else if (localHasValidPB) {
         merged.best_time_seconds = localData.best_time_seconds;
         merged.best_time_date = localData.best_time_date;
-    } else if (remoteData.best_time_seconds !== null && remoteData.best_time_seconds !== undefined) {
+    } else if (remoteHasValidPB) {
         merged.best_time_seconds = remoteData.best_time_seconds;
         merged.best_time_date = remoteData.best_time_date;
     }
