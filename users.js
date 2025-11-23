@@ -384,6 +384,10 @@ async function bulkSyncAllPuzzles() {
             // Mark that we've done the initial load
             hasLoadedInitialProgress = true;
 
+            // After puzzle sync completes, sync stats
+            console.log('[BULK-SYNC] Starting stats sync...');
+            await bulkSyncAllStats();
+
         } else {
             throw new Error(result.error || `Server responded with status ${response.status}`);
         }
@@ -626,7 +630,242 @@ async function syncProgressLogic(isImmediate, isInitialLoad = false) {
         statusElement.className = 'text-center h-4 text-xs mt-1 text-red-600';
     }
 }
-// --- 8. GLOBAL EXPORTS AND EXECUTION ---
+// --- 8. STATS SYNCHRONIZATION ---
+
+/**
+ * Bulk fetches all stats from the server and merges with local stats
+ * Called after login/authentication
+ */
+async function bulkSyncAllStats() {
+    if (!currentUserId || !auth0Client) {
+        console.log('Stats sync skipped: User not authenticated.');
+        return;
+    }
+
+    console.log('[STATS-SYNC] Starting bulk stats sync...');
+
+    try {
+        const token = await auth0Client.getTokenSilently({
+            authorizationParams: { audience: AUTH0_AUDIENCE },
+        });
+
+        const gridSizes = ['5x5', '5x6', '6x7', '7x7'];
+        const response = await fetch(`https://gokuro.vercel.app/api/stats?grid_sizes=${gridSizes.join(',')}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.action === 'FETCHED') {
+            const remoteStats = result.stats || {};
+            
+            // Get local stats
+            const localStatsMap = typeof window.getAllStatsFromStorage === 'function' 
+                ? window.getAllStatsFromStorage() 
+                : {};
+
+            // Merge stats for each grid size
+            let syncedCount = 0;
+            for (const gridSize of gridSizes) {
+                const remoteData = remoteStats[gridSize];
+                const localData = localStatsMap[gridSize];
+
+                // Merge logic: Take the best of both
+                const mergedStats = mergeStats(localData, remoteData);
+
+                // Save merged stats locally
+                if (typeof window.saveStatsForGrid === 'function') {
+                    window.saveStatsForGrid(gridSize, mergedStats);
+                    syncedCount++;
+                }
+
+                // If remote was missing or inferior, push to server
+                if (!remoteData || statsNeedServerUpdate(mergedStats, remoteData)) {
+                    await uploadStatsToServer(gridSize, mergedStats, token);
+                }
+            }
+
+            console.log(`[STATS-SYNC] Complete: Synced ${syncedCount} grid sizes`);
+
+            // Refresh the UI for current grid
+            if (typeof window.displayStatsForGrid === 'function' && typeof window.getCurrentGameState === 'function') {
+                const currentState = window.getCurrentGameState();
+                if (currentState && currentState.puzzle_id) {
+                    const parts = currentState.puzzle_id.split('-');
+                    const gridSize = parts[parts.length - 1];
+                    window.displayStatsForGrid(gridSize);
+                }
+            }
+
+        } else {
+            console.error('Failed to fetch stats:', result.error);
+        }
+
+    } catch (error) {
+        console.error('Bulk stats sync failed:', error);
+    }
+}
+
+/**
+ * Merges local and remote stats, taking the best of both
+ * @param {object} local - Local stats object
+ * @param {object} remote - Remote stats object from server
+ * @returns {object} Merged stats
+ */
+function mergeStats(local, remote) {
+    const merged = {
+        best_time_seconds: null,
+        best_time_date: null,
+        current_streak_days: 0,
+        max_streak_days: 0,
+        last_completed_date: null,
+        max_streak_date: null
+    };
+
+    // Personal Best: Take the faster time
+    if (local?.best_time_seconds !== null && remote?.best_time_seconds !== null) {
+        if (local.best_time_seconds < remote.best_time_seconds) {
+            merged.best_time_seconds = local.best_time_seconds;
+            merged.best_time_date = local.best_time_date;
+        } else {
+            merged.best_time_seconds = remote.best_time_seconds;
+            merged.best_time_date = remote.best_time_date;
+        }
+    } else if (local?.best_time_seconds !== null) {
+        merged.best_time_seconds = local.best_time_seconds;
+        merged.best_time_date = local.best_time_date;
+    } else if (remote?.best_time_seconds !== null) {
+        merged.best_time_seconds = remote.best_time_seconds;
+        merged.best_time_date = remote.best_time_date;
+    }
+
+    // Streaks: Take the most recent completion
+    const localLast = local?.last_completed_date ? new Date(local.last_completed_date) : null;
+    const remoteLast = remote?.last_completed_date ? new Date(remote.last_completed_date) : null;
+
+    if (localLast && remoteLast) {
+        if (localLast >= remoteLast) {
+            merged.current_streak_days = local.current_streak_days;
+            merged.last_completed_date = local.last_completed_date;
+        } else {
+            merged.current_streak_days = remote.current_streak_days;
+            merged.last_completed_date = remote.last_completed_date;
+        }
+    } else if (localLast) {
+        merged.current_streak_days = local.current_streak_days;
+        merged.last_completed_date = local.last_completed_date;
+    } else if (remoteLast) {
+        merged.current_streak_days = remote.current_streak_days;
+        merged.last_completed_date = remote.last_completed_date;
+    }
+
+    // Max Streak: Take the higher value
+    const localMax = local?.max_streak_days || 0;
+    const remoteMax = remote?.max_streak_days || 0;
+    if (localMax > remoteMax) {
+        merged.max_streak_days = local.max_streak_days;
+        merged.max_streak_date = local.max_streak_date;
+    } else {
+        merged.max_streak_days = remoteMax;
+        merged.max_streak_date = remote?.max_streak_date;
+    }
+
+    return merged;
+}
+
+/**
+ * Checks if merged stats need to be pushed to server
+ * @param {object} merged - Merged stats
+ * @param {object} remote - Current remote stats
+ * @returns {boolean} True if server needs update
+ */
+function statsNeedServerUpdate(merged, remote) {
+    if (!remote) return true; // No remote data, need to push
+
+    // Check if any field is different
+    if (merged.best_time_seconds !== remote.best_time_seconds) return true;
+    if (merged.current_streak_days !== remote.current_streak_days) return true;
+    if (merged.max_streak_days !== remote.max_streak_days) return true;
+    if (merged.last_completed_date !== remote.last_completed_date) return true;
+
+    return false;
+}
+
+/**
+ * Uploads stats to server
+ * @param {string} gridSize - e.g., "5x5"
+ * @param {object} stats - Stats object to upload
+ * @param {string} token - Auth token
+ */
+async function uploadStatsToServer(gridSize, stats, token) {
+    try {
+        const response = await fetch('https://gokuro.vercel.app/api/stats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                grid_size: gridSize,
+                stats: stats
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || `Stats upload failed for ${gridSize}`);
+        }
+
+        const result = await response.json();
+        console.log(`[STATS-SYNC] ↑ Uploaded stats for ${gridSize}`);
+        
+        // If server returned merged stats, update local with the merge
+        if (result.action === 'SYNCED' && result.merged_stats) {
+            if (typeof window.saveStatsForGrid === 'function') {
+                window.saveStatsForGrid(gridSize, result.merged_stats);
+            }
+        }
+
+        return result;
+
+    } catch (error) {
+        console.error(`Failed to upload stats for ${gridSize}:`, error);
+    }
+}
+
+/**
+ * Syncs a single grid's stats to server (called from stats.js after completion)
+ * @param {string} gridSize - e.g., "5x5"
+ * @param {object} stats - Stats object to sync
+ */
+async function syncStatsToServer(gridSize, stats) {
+    if (!currentUserId || !auth0Client) {
+        console.log('Stats sync skipped: User not authenticated.');
+        return;
+    }
+
+    // Don't sync during bulk operations
+    if (isBulkSyncing || isInitializing) {
+        console.log('Stats sync skipped: Bulk operation in progress.');
+        return;
+    }
+
+    try {
+        const token = await auth0Client.getTokenSilently({
+            authorizationParams: { audience: AUTH0_AUDIENCE },
+        });
+
+        await uploadStatsToServer(gridSize, stats, token);
+
+    } catch (error) {
+        console.error('Stats sync failed:', error);
+    }
+}
+
+// --- 9. GLOBAL EXPORTS AND EXECUTION ---
 
 // A. Debounced function for frequent saves (from updateTotalStyles)
 window.syncProgress = debounce(syncProgressLogic, 5000); 
@@ -638,5 +877,9 @@ window.syncOnNewPuzzle = () => syncProgressLogic(true);
 // C. Bulk sync function (can be called manually or on refresh)
 window.bulkSyncAllPuzzles = bulkSyncAllPuzzles;
 
-// D. Start the authentication process after the DOM is fully loaded.
+// D. Stats sync functions
+window.syncStatsToServer = syncStatsToServer;
+window.bulkSyncAllStats = bulkSyncAllStats;
+
+// E. Start the authentication process after the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', initializeAuth0);

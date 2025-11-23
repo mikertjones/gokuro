@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gokuro-cache-v9.1';
+const CACHE_NAME = 'gokuro-cache-v10.0';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -6,6 +6,7 @@ const APP_SHELL = [
   '/modal-styles.css',
   '/app.js',
   '/users.js',
+  '/stats.js',
   '/manifest.webmanifest',
   '/images/icons/icon-192.png',
   '/images/icons/icon-512.png',

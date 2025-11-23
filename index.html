@@ -90,6 +90,21 @@
       </div>
   </div>
 
+  <!-- Stats Section -->
+  <div id="stats-section" class="stats-section-new">
+      <div class="stat-row">
+          <span class="stat-row-emoji">⭐</span>
+          <span class="stat-row-label">PB:</span>
+          <span id="stat-best-time" class="stat-row-value">--:--</span>
+      </div>
+      <div class="stat-row">
+          <span class="stat-row-emoji">🔥</span>
+          <span class="stat-row-label">DAYS:</span>
+          <span id="stat-current-streak" class="stat-row-value">0</span>
+          <span class="stat-row-label-max">MAX:</span>
+          <span id="stat-max-streak" class="stat-row-value">0</span>
+      </div>
+  </div>
 
   <div class="board-area">
     <div class="grid-wrapper" aria-label="Word puzzle grid">
@@ -310,10 +325,13 @@
   <!-- 1. Load the Auth0 SDK FIRST to ensure 'createAuth0Client' is defined -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
 
-  <!-- 2. Load User/Auth Logic (relies on Auth0 SDK - NO DEFER) -->
+  <!-- 2. Load Stats Logic (standalone, no dependencies) -->
+  <script src="stats.js"></script>
+
+  <!-- 3. Load User/Auth Logic (relies on Auth0 SDK - NO DEFER) -->
   <script src="users.js"></script> 
   
-  <!-- 3. Load Main Game Logic (uses functions exposed by user.js - uses DEFER) -->
+  <!-- 4. Load Main Game Logic (uses functions exposed by user.js and stats.js - uses DEFER) -->
   <script src="app.js" defer></script>
   
   </body>

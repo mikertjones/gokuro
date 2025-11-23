@@ -621,6 +621,7 @@ let timerAccumulatedSeconds = 0;
 let timerPaused = false;
 let puzzleCompleted = false;
 let isRestoringProgress = false;
+let isPuzzlePristine = true; // Tracks if puzzle has been paused/switched for PB eligibility
 let pendingSaveTimeoutId = 0;
 let pendingSaveOptions = null;
 let deferredInstallPrompt = null;
@@ -788,6 +789,7 @@ async function performSetActivePuzzle(key, { force = false, reset = false, targe
       await persistActivePuzzle({
         statusOverride: puzzleCompleted ? 'complete' : 'paused',
         targetKey: composePuzzleStorageKey(previousDate, previousKey),
+        isPristine: false, // Mark as not pristine when switching away
       });
       if (!isRestoringProgress && typeof window.syncOnPause === 'function') window.syncOnPause();
     } catch (error) {
@@ -806,6 +808,11 @@ async function performSetActivePuzzle(key, { force = false, reset = false, targe
   activeKey = key;
   activeState = prepareState(definition.data);
 
+  // Update stats display for the new grid size
+  if (typeof window.setCurrentGridSize === 'function') {
+    window.setCurrentGridSize(key);
+  }
+
   renderButtons();
   renderGrid(activeState);
   updateGridScaling(activeState);
@@ -817,12 +824,29 @@ async function performSetActivePuzzle(key, { force = false, reset = false, targe
   activePuzzleDate = normalizeDateString(activeDate);
   if (reset) {
     const storageKey = composePuzzleStorageKey(activeDate, key);
+    // Check if there was existing progress before deleting
+    const existingRecord = await getPuzzleProgressRecord(storageKey);
+    const hadProgress = existingRecord && (
+      (existingRecord.entries && Object.keys(existingRecord.entries).length > 0) ||
+      existingRecord.elapsedSeconds > 0 ||
+      existingRecord.status === 'complete'
+    );
+    
     await deletePuzzleProgressRecord(storageKey);
     setPuzzleStatusCacheEntry(storageKey, null);
     refreshButtonStatusesForActiveDay();
+    
+    // If there was progress (partial or complete), mark as not pristine
+    // This prevents getting PB after seeing the puzzle before
+    isPuzzlePristine = !hadProgress;
 
     /*if (typeof window.syncOnNewPuzzle === 'function') window.syncOnNewPuzzle();*/
   } else {
+    // Not a reset - loading an existing puzzle or starting fresh
+    const storageKey = composePuzzleStorageKey(activeDate, key);
+    const existingRecord = await getPuzzleProgressRecord(storageKey);
+    isPuzzlePristine = !existingRecord; // Only pristine if no existing record
+    
     try {
       await restoreActivePuzzleProgress(activeDate, key);
     } catch (error) {
@@ -1103,7 +1127,7 @@ function collectPuzzleEntries(state) {
   return entries;
 }
 
-async function persistActivePuzzle({ statusOverride, targetKey } = {}) {
+async function persistActivePuzzle({ statusOverride, targetKey, isPristine: isPristineOverride } = {}) {
   if (pendingSaveTimeoutId) {
     clearTimeout(pendingSaveTimeoutId);
     pendingSaveTimeoutId = 0;
@@ -1147,6 +1171,7 @@ async function persistActivePuzzle({ statusOverride, targetKey } = {}) {
     entries,
     elapsedSeconds,
     updatedAt: Date.now(),
+    isPristine: isPristineOverride !== undefined ? isPristineOverride : isPuzzlePristine, // Track if puzzle has been paused/switched
   };
 
   await savePuzzleProgressRecord(record);
@@ -1176,6 +1201,7 @@ async function restoreActivePuzzleProgress(date, puzzleKey) {
   timerStartTimestamp = 0;
   timerPaused = record.status === 'paused';
   puzzleCompleted = record.status === 'complete';
+  isPuzzlePristine = record.isPristine !== undefined ? record.isPristine : false; // Restore pristine flag
   updateTimerDisplay();
   updateTimerControls();
   if (completionMessage) {
@@ -1239,7 +1265,12 @@ async function refreshStatusesForDay(date) {
 }
 
 function scheduleSaveActivePuzzle(options = {}) {
-  pendingSaveOptions = Object.assign({}, pendingSaveOptions || {}, options);
+  // Capture the current puzzle's storage key NOW, not when the timeout fires
+  // This prevents saving to the wrong date if user switches days before timeout
+  const currentStorageKey = getActivePuzzleStorageKey();
+  const optsWithKey = Object.assign({ targetKey: currentStorageKey }, pendingSaveOptions || {}, options);
+  pendingSaveOptions = optsWithKey;
+  
   if (pendingSaveTimeoutId) {
     clearTimeout(pendingSaveTimeoutId);
   }
@@ -1994,6 +2025,7 @@ function pauseActiveTimer({ silent = false } = {}) {
   }
   if (!puzzleCompleted) {
     timerPaused = true;
+    isPuzzlePristine = false; // Mark as not pristine when paused
   }
   if (!silent) {
     updateTimerControls();
@@ -2063,6 +2095,15 @@ function checkForCompletion(state) {
     }
     updateTimerControls();
     scheduleSaveActivePuzzle({ statusOverride: 'complete' });
+    
+    // Update user stats (personal best and streak)
+    if (!isRestoringProgress && typeof window.updateStatsOnCompletion === 'function') {
+      const puzzleDate = getActivePuzzleDate();
+      const puzzleId = composePuzzleStorageKey(puzzleDate, activeKey);
+      const elapsedSeconds = getCurrentElapsedSeconds();
+      window.updateStatsOnCompletion(puzzleId, elapsedSeconds, isPuzzlePristine);
+    }
+    
     if (!isRestoringProgress && typeof window.syncOnPause === 'function') window.syncOnPause();
   }
 }

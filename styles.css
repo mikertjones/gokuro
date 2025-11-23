@@ -467,6 +467,60 @@ blockquote h3:after {
     flex-wrap: wrap;
  }
 
+/* Stats Section */
+.stats-section-new {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 50px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.stat-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 1em;
+}
+
+.stat-row-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.stat-row-emoji {
+    font-size: 1.5em;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.stat-row-label {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #6b7280;
+    line-height: 1;
+}
+
+.stat-row-label-max {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #6b7280;
+    margin-left: 8px;
+    line-height: 1;
+}
+
+.stat-row-value {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #2563eb;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+}
+
+
 .share-button {
     appearance: none;
     border: none;
